@@ -29,6 +29,7 @@ const routes: Routes = [
   { path: 'pareto', component: ParetoAnalysisComponent },
   { path: 'advanced', component: AdvancedAnalysisComponent },
   { path: 'system-status', component: SystemStatusComponent },
+  { path: 'equipment', component: EquipmentComponent },
 
   // ISO 50001 Routes
   { path: 'iso50001', component: Iso50001DashboardComponent },

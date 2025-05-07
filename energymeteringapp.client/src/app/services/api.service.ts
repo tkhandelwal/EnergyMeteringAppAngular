@@ -10,6 +10,45 @@ import { catchError } from 'rxjs/operators';
 export class ApiService {
   constructor(private http: HttpClient) { }
 
+  // Add these methods to the existing ApiService
+
+  // Equipment
+  getEquipment(): Observable<any[]> {
+    return this.http.get<any[]>('/api/equipment')
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
+  getEquipmentById(id: number): Observable<any> {
+    return this.http.get<any>(`/api/equipment/${id}`)
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
+  createEquipment(equipment: any): Observable<any> {
+    return this.http.post('/api/equipment', equipment)
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
+  updateEquipment(id: number, equipment: any): Observable<any> {
+    return this.http.put(`/api/equipment/${id}`, equipment)
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
+  deleteEquipment(id: number): Observable<any> {
+    return this.http.delete(`/api/equipment/${id}`)
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
+  // Equipment-Classification relationships
+  addClassificationToEquipment(equipmentId: number, classificationId: number): Observable<any> {
+    return this.http.post(`/api/equipment/${equipmentId}/classifications/${classificationId}`, {})
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
+  removeClassificationFromEquipment(equipmentId: number, classificationId: number): Observable<any> {
+    return this.http.delete(`/api/equipment/${equipmentId}/classifications/${classificationId}`)
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
   // Classifications
   getClassifications(): Observable<any[]> {
     return this.http.get<any[]>('/api/classifications')

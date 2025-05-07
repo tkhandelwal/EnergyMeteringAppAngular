@@ -8,7 +8,13 @@ namespace EnergyMeteringApp.Models
         public DateTime Timestamp { get; set; }
         public double EnergyValue { get; set; } // kWh
         public double Power { get; set; } // kW
-        public int ClassificationId { get; set; }
-        public Classification Classification { get; set; } = null!;
+
+        // Updated to reference equipment directly
+        public int EquipmentId { get; set; }
+        public Equipment Equipment { get; set; } = null!;
+
+        // Keep classification for backward compatibility and filtering
+        public int? ClassificationId { get; set; }
+        public Classification? Classification { get; set; }
     }
 }
