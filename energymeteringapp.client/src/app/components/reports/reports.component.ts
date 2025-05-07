@@ -1,5 +1,7 @@
+// src/app/components/reports/reports.component.ts
 import { Component, OnInit } from '@angular/core';
 import { ApiService } from '../../services/api.service';
+import { firstValueFrom } from 'rxjs'; // Add this import
 
 @Component({
   selector: 'app-reports',
@@ -13,9 +15,9 @@ export class ReportsComponent implements OnInit {
   error: string | null = null;
 
   reportConfig = {
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
-    endDate: new Date().toISOString().split('T')[0], // today
-    classificationIds: [],
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+    classificationIds: [] as number[],
     reportType: 'energyFlow'
   };
 
@@ -33,24 +35,26 @@ export class ReportsComponent implements OnInit {
     this.fetchData();
   }
 
-  fetchData(): void {
+  async fetchData(): Promise<void> {
     this.loading = true;
     this.error = null;
 
-    // Fetch classifications and metering data in parallel
-    Promise.all([
-      this.apiService.getClassifications().toPromise(),
-      this.apiService.getMeteringData().toPromise()
-    ]).then(([classifications, meteringData]) => {
+    try {
+      // Fetch classifications and metering data in parallel
+      const [classifications, meteringData] = await Promise.all([
+        firstValueFrom(this.apiService.getClassifications()),
+        firstValueFrom(this.apiService.getMeteringData())
+      ]);
+
       this.classifications = classifications || [];
       this.meteringData = meteringData || [];
       this.updateReport();
-    }).catch(error => {
+    } catch (error) {
       console.error('Error fetching report data:', error);
       this.error = 'Failed to load data. Please try again later.';
-    }).finally(() => {
+    } finally {
       this.loading = false;
-    });
+    }
   }
 
   handleChange(event: any): void {

@@ -31,6 +31,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Register services
 builder.Services.AddScoped<MeteringService>();
+builder.Services.AddScoped<EnPIService>();
 
 var app = builder.Build();
 
