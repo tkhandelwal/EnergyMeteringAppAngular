@@ -3,13 +3,35 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
+import { PlotlyModule } from 'angular-plotly.js';
+
+// Define interfaces for tree node structure
+interface TreeNode {
+  name: string;
+  value: number;
+  children?: TreeNode[];
+}
+
+interface SankeyNode {
+  name: string;
+}
+
+interface SankeyLink {
+  source: number;
+  target: number;
+  value: number;
+}
+
+interface SankeyData {
+  nodes: SankeyNode[];
+  links: SankeyLink[];
+}
 
 @Component({
   selector: 'app-energy-flow-analysis',
   templateUrl: './energy-flow-analysis.component.html',
-  //styleUrls: ['./energy-flow-analysis.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule, PlotlyModule]
 })
 export class EnergyFlowAnalysisComponent implements OnInit {
   meteringData: any[] = [];
@@ -25,7 +47,7 @@ export class EnergyFlowAnalysisComponent implements OnInit {
   view = 'sankey';
 
   // Data for different visualizations
-  sankeyData: any = null;
+  sankeyData: SankeyData | null = null;
   treemapData: any = null;
   heatmapData: any = null;
 
@@ -134,8 +156,7 @@ export class EnergyFlowAnalysisComponent implements OnInit {
       energyByType[type][name] += data.energyValue;
     });
 
-    // This is a placeholder for Sankey diagram data
-    // In a real implementation, this would be formatted for a specific Sankey library
+    // Initialize sankeyData as a non-null object before using it
     this.sankeyData = {
       nodes: [],
       links: []
@@ -149,14 +170,14 @@ export class EnergyFlowAnalysisComponent implements OnInit {
     Object.keys(energyByType).forEach(type => {
       nodeIndex++;
       const typeNodeIndex = nodeIndex;
-      this.sankeyData.nodes.push({ name: type });
+      this.sankeyData!.nodes.push({ name: type });
 
       // Calculate total for this type
       const typeTotal = Object.values(energyByType[type])
         .reduce((sum, value) => sum + value, 0);
 
       // Link from root to type
-      this.sankeyData.links.push({
+      this.sankeyData!.links.push({
         source: 0,
         target: typeNodeIndex,
         value: typeTotal
@@ -165,10 +186,10 @@ export class EnergyFlowAnalysisComponent implements OnInit {
       // Process classifications within this type
       Object.keys(energyByType[type]).forEach(name => {
         nodeIndex++;
-        this.sankeyData.nodes.push({ name });
+        this.sankeyData!.nodes.push({ name });
 
         // Link from type to classification
-        this.sankeyData.links.push({
+        this.sankeyData!.links.push({
           source: typeNodeIndex,
           target: nodeIndex,
           value: energyByType[type][name]
@@ -210,15 +231,17 @@ export class EnergyFlowAnalysisComponent implements OnInit {
 
     // Create the treemap data structure
     Object.keys(energyByType).forEach(type => {
-      const typeNode = {
+      const typeNode: TreeNode = {
         name: type,
+        value: 0,
         children: []
       };
 
       Object.keys(energyByType[type]).forEach(name => {
-        typeNode.children.push({
+        const value = energyByType[type][name];
+        typeNode.children!.push({
           name,
-          value: energyByType[type][name]
+          value
         });
       });
 

@@ -3,14 +3,13 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PlotlyModule } from 'angular-plotly.js';
-import * as Plotly from 'plotly.js-dist';
 import { ApiService } from '../../services/api.service';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-pareto-analysis',
   templateUrl: './pareto-analysis.component.html',
-  styleUrls: ['./pareto-analysis.component.css'],
+  //styleUrls: ['./pareto-analysis.component.css'],
   standalone: true,
   imports: [CommonModule, FormsModule, PlotlyModule]
 })

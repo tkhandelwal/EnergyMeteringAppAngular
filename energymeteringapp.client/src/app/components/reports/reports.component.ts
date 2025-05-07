@@ -3,7 +3,6 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PlotlyModule } from 'angular-plotly.js';
-import * as Plotly from 'plotly.js-dist';
 import { ApiService } from '../../services/api.service';
 import { firstValueFrom } from 'rxjs';
 
@@ -31,7 +30,7 @@ interface TableItem {
 @Component({
   selector: 'app-reports',
   templateUrl: './reports.component.html',
-  styleUrls: ['./reports.component.css'],
+  //styleUrls: ['./reports.component.css'],
   standalone: true,
   imports: [CommonModule, FormsModule, PlotlyModule]
 })

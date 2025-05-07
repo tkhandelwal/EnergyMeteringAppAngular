@@ -76,10 +76,10 @@
       </div>
 
       <div *ngIf="!loading && paretoData.length > 0" style="height: 500px;">
-        <plotly-plot *ngIf="chartData"
+        <plotly-plot *ngIf="plotlyData && plotlyData.length > 0"
                      [data]="plotlyData"
                      [layout]="plotlyLayout"
-                     [config]="{responsive: true}">
+                     [config]="plotlyConfig">
         </plotly-plot>
 
         <div class="text-center mt-3 text-muted">
