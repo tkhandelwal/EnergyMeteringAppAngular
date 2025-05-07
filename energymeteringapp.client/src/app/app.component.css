@@ -1,14 +1,16 @@
-﻿:host {
-    max-width: 1280px;
-    padding: 2rem;
-    text-align: center;
+/* src/app/app.component.css */
+.navbar {
+  margin-bottom: 20px;
 }
 
-th, td {
-    padding-left: 1rem;
-    padding-right: 1rem;
+.navbar-brand {
+  font-weight: bold;
 }
 
-table {
-    margin: 0 auto;
+.nav-item {
+  margin-right: 5px;
+}
+
+.dropdown-menu {
+  min-width: 200px;
 }

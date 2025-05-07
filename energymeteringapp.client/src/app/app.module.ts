@@ -1,7 +1,8 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { PlotlyModule } from 'angular-plotly.js';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -30,12 +31,14 @@ import { AdvancedAnalysisComponent } from './components/advanced-analysis/advanc
   ],
   imports: [
     BrowserModule,
-    HttpClientModule,
     FormsModule,
     ReactiveFormsModule,
+    PlotlyModule,
     AppRoutingModule
   ],
-  providers: [],
+  providers: [
+    provideHttpClient(withInterceptorsFromDi())
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

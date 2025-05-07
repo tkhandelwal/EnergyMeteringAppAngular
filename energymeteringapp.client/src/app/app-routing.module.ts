@@ -1,3 +1,4 @@
+// src/app/app-routing.module.ts
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
@@ -12,20 +13,20 @@ import { ParetoAnalysisComponent } from './components/pareto-analysis/pareto-ana
 import { AdvancedAnalysisComponent } from './components/advanced-analysis/advanced-analysis.component';
 
 const routes: Routes = [
-  { path: '', component: DashboardComponent },
-  { path: 'classifications', component: ClassificationManagerComponent },
-  { path: 'generator', component: DataGeneratorComponent },
-  { path: 'reports', component: ReportsComponent },
-  { path: 'enpi', component: EnPIManagerComponent },
-  { path: 'energy-flow', component: EnergyFlowAnalysisComponent },
-  { path: 'pareto', component: ParetoAnalysisComponent },
-  { path: 'advanced', component: AdvancedAnalysisComponent },
-  { path: 'system-status', component: SystemStatusComponent },
-  { path: '**', redirectTo: '' }
+    { path: '', component: DashboardComponent },
+    { path: 'classifications', component: ClassificationManagerComponent },
+    { path: 'generator', component: DataGeneratorComponent },
+    { path: 'reports', component: ReportsComponent },
+    { path: 'enpi', component: EnPIManagerComponent },
+    { path: 'energy-flow', component: EnergyFlowAnalysisComponent },
+    { path: 'pareto', component: ParetoAnalysisComponent },
+    { path: 'advanced', component: AdvancedAnalysisComponent },
+    { path: 'system-status', component: SystemStatusComponent },
+    { path: '**', redirectTo: '' }
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+    imports: [RouterModule.forRoot(routes)],
+    exports: [RouterModule]
 })
 export class AppRoutingModule { }

@@ -1,5 +1,8 @@
+// src/app/components/advanced-analysis/advanced-analysis.component.ts
 import { Component, OnInit } from '@angular/core';
 import { ApiService } from '../../services/api.service';
+import { ChartService } from '../../services/chart.service';
+import { MeteringData, Classification } from '../../models/models';
 
 @Component({
   selector: 'app-advanced-analysis',
@@ -7,23 +10,28 @@ import { ApiService } from '../../services/api.service';
   styleUrls: ['./advanced-analysis.component.css']
 })
 export class AdvancedAnalysisComponent implements OnInit {
-  meteringData: any[] = [];
-  classifications: any[] = [];
+  meteringData: MeteringData[] = [];
+  classifications: Classification[] = [];
   loading = false;
   error: string | null = null;
 
   analysisConfig = {
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
     endDate: new Date().toISOString().split('T')[0], // today
-    classificationIds: [],
+    classificationIds: [] as number[],
     viewType: 'hourlyHeatmap',
     comparisonType: 'none'
   };
 
-  analysisData: any = null;
-  chartOptions: any = {};
+  // Plotly chart data and layout
+  analysisData: any[] = [];
+  chartLayout: any = {};
+  chartConfig = { responsive: true };
 
-  constructor(private apiService: ApiService) { }
+  constructor(
+    private apiService: ApiService,
+    private chartService: ChartService
+  ) { }
 
   ngOnInit(): void {
     this.fetchData();
@@ -80,7 +88,7 @@ export class AdvancedAnalysisComponent implements OnInit {
     const filteredData = this.getFilteredData();
 
     if (filteredData.length === 0) {
-      this.analysisData = null;
+      this.analysisData = [];
       return;
     }
 
@@ -99,11 +107,11 @@ export class AdvancedAnalysisComponent implements OnInit {
         this.generateClassificationComparison(filteredData);
         break;
       default:
-        this.analysisData = null;
+        this.analysisData = [];
     }
   }
 
-  getFilteredData(): any[] {
+  getFilteredData(): MeteringData[] {
     let filteredData = [...this.meteringData];
 
     // Filter by dates
@@ -122,7 +130,7 @@ export class AdvancedAnalysisComponent implements OnInit {
     return filteredData;
   }
 
-  generateHourlyHeatmap(filteredData: any[]): void {
+  generateHourlyHeatmap(filteredData: MeteringData[]): void {
     // Create 2D grid for day of week vs hour of day
     const heatmapData = Array(7).fill(0).map(() => Array(24).fill(0));
     const countData = Array(7).fill(0).map(() => Array(24).fill(0));
@@ -145,77 +153,21 @@ export class AdvancedAnalysisComponent implements OnInit {
       )
     );
 
-    // Flatten data for chart.js
-    const flattenedData = [];
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-    for (let day = 0; day < 7; day++) {
-      for (let hour = 0; hour < 24; hour++) {
-        flattenedData.push({
-          x: hour,
-          y: days[day],
-          v: avgData[day][hour]
-        });
+    this.analysisData = [{
+      z: avgData,
+      x: Array.from({ length: 24 }, (_, i) => i),
+      y: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      type: 'heatmap',
+      colorscale: 'Viridis',
+      colorbar: {
+        title: 'Power (kW)'
       }
-    }
+    }];
 
-    this.analysisData = {
-      datasets: [{
-        label: 'Power (kW)',
-        data: flattenedData,
-        backgroundColor: function (context: any) {
-          const value = context.dataset.data[context.dataIndex].v;
-          const alpha = value / Math.max(...flattenedData.map(d => d.v));
-          return `rgba(66, 133, 244, ${alpha})`;
-        }
-      }]
-    };
-
-    this.chartOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: function (context: any) {
-              return `Power: ${context.dataset.data[context.dataIndex].v.toFixed(2)} kW`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          type: 'linear',
-          position: 'bottom',
-          min: 0,
-          max: 23,
-          ticks: {
-            stepSize: 1,
-            callback: function (value: number) {
-              return `${value}:00`;
-            }
-          },
-          title: {
-            display: true,
-            text: 'Hour of Day'
-          }
-        },
-        y: {
-          type: 'category',
-          position: 'left',
-          labels: days,
-          title: {
-            display: true,
-            text: 'Day of Week'
-          }
-        }
-      }
-    };
+    this.chartLayout = this.chartService.getHeatmapLayout('Energy Usage by Hour and Day');
   }
 
-  generateWeekdayComparison(filteredData: any[]): void {
-    // Group data by day of week
+  generateWeekdayComparison(filteredData: MeteringData[]): void {
     const weekdayData = Array(7).fill(0);
     const countData = Array(7).fill(0);
 
@@ -230,51 +182,23 @@ export class AdvancedAnalysisComponent implements OnInit {
       countData[index] > 0 ? total / countData[index] : 0
     );
 
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-    this.analysisData = {
-      labels: days,
-      datasets: [{
-        label: 'Average Energy Consumption (kWh)',
-        data: avgData,
-        backgroundColor: 'rgba(55, 128, 191, 0.7)',
-        borderColor: 'rgb(55, 128, 191)',
-        borderWidth: 1
-      }]
-    };
-
-    this.chartOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: true },
-        tooltip: {
-          callbacks: {
-            label: function (context: any) {
-              return `Energy: ${context.parsed.y.toFixed(2)} kWh`;
-            }
-          }
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Average Energy (kWh)'
-          }
-        },
-        x: {
-          title: {
-            display: true,
-            text: 'Day of Week'
-          }
-        }
+    this.analysisData = [{
+      x: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      y: avgData,
+      type: 'bar',
+      marker: {
+        color: 'rgba(55, 128, 191, 0.7)'
       }
-    };
+    }];
+
+    this.chartLayout = this.chartService.getBarChartLayout(
+      'Average Energy Usage by Day of Week',
+      'Day of Week',
+      'Average Energy (kWh)'
+    );
   }
 
-  generateConsumptionTrend(filteredData: any[]): void {
+  generateConsumptionTrend(filteredData: MeteringData[]): void {
     // Group by date
     const dailyData: { [key: string]: { energy: number, power: number, count: number } } = {};
 
@@ -302,67 +226,51 @@ export class AdvancedAnalysisComponent implements OnInit {
         : 0
     );
 
-    this.analysisData = {
-      labels: dates,
-      datasets: [
-        {
-          label: 'Energy (kWh)',
-          data: energyValues,
-          backgroundColor: 'rgba(55, 128, 191, 0.2)',
-          borderColor: 'rgb(55, 128, 191)',
-          borderWidth: 2,
-          yAxisID: 'energy'
-        },
-        {
-          label: 'Avg Power (kW)',
-          data: powerValues,
-          backgroundColor: 'rgba(255, 99, 132, 0.2)',
-          borderColor: 'rgb(255, 99, 132)',
-          borderWidth: 2,
-          yAxisID: 'power'
-        }
-      ]
-    };
-
-    this.chartOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: true }
+    this.analysisData = [
+      {
+        x: dates,
+        y: energyValues,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Energy (kWh)',
+        marker: { color: 'blue' }
       },
-      scales: {
-        x: {
-          title: {
-            display: true,
-            text: 'Date'
-          }
-        },
-        energy: {
-          type: 'linear',
-          position: 'left',
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Energy (kWh)'
-          }
-        },
-        power: {
-          type: 'linear',
-          position: 'right',
-          beginAtZero: true,
-          grid: {
-            drawOnChartArea: false
-          },
-          title: {
-            display: true,
-            text: 'Power (kW)'
-          }
-        }
+      {
+        x: dates,
+        y: powerValues,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Avg Power (kW)',
+        yaxis: 'y2',
+        marker: { color: 'red' }
+      }
+    ];
+
+    this.chartLayout = {
+      ...this.chartService.getDefaultLayout('Energy Consumption Trend'),
+      height: 500,
+      xaxis: {
+        title: 'Date',
+        tickangle: -45
+      },
+      yaxis: {
+        title: 'Energy (kWh)'
+      },
+      yaxis2: {
+        title: 'Power (kW)',
+        titlefont: { color: 'red' },
+        tickfont: { color: 'red' },
+        overlaying: 'y',
+        side: 'right'
+      },
+      legend: {
+        orientation: 'h',
+        y: -0.2
       }
     };
   }
 
-  generateClassificationComparison(filteredData: any[]): void {
+  generateClassificationComparison(filteredData: MeteringData[]): void {
     // Group by classification
     const classData: { [key: string]: { energy: number, maxPower: number, totalPower: number, count: number } } = {};
 
@@ -404,51 +312,37 @@ export class AdvancedAnalysisComponent implements OnInit {
     const sortedEnergy = sortedIndices.map(idx => energyValues[idx]);
     const sortedPower = sortedIndices.map(idx => avgPowerValues[idx]);
 
-    this.analysisData = {
-      labels: sortedNames,
-      datasets: [
-        {
-          label: 'Energy (kWh)',
-          data: sortedEnergy,
-          backgroundColor: 'rgba(55, 128, 191, 0.7)',
-          borderColor: 'rgb(55, 128, 191)',
-          borderWidth: 1
-        },
-        {
-          label: 'Avg Power (kW)',
-          data: sortedPower,
-          backgroundColor: 'rgba(255, 99, 132, 0.7)',
-          borderColor: 'rgb(255, 99, 132)',
-          borderWidth: 1
-        }
-      ]
-    };
-
-    this.chartOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: true }
+    this.analysisData = [
+      {
+        x: sortedNames,
+        y: sortedEnergy,
+        type: 'bar',
+        name: 'Energy (kWh)',
+        marker: { color: 'rgba(55, 128, 191, 0.7)' }
       },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Value'
-          }
-        },
-        x: {
-          title: {
-            display: true,
-            text: 'Classification'
-          },
-          ticks: {
-            autoSkip: false,
-            maxRotation: 45,
-            minRotation: 45
-          }
-        }
+      {
+        x: sortedNames,
+        y: sortedPower,
+        type: 'bar',
+        name: 'Avg Power (kW)',
+        marker: { color: 'rgba(219, 64, 82, 0.7)' }
+      }
+    ];
+
+    this.chartLayout = {
+      ...this.chartService.getDefaultLayout('Energy Consumption by Classification'),
+      height: 500,
+      barmode: 'group',
+      xaxis: {
+        title: 'Classification',
+        tickangle: -45
+      },
+      yaxis: {
+        title: 'Value'
+      },
+      legend: {
+        orientation: 'h',
+        y: -0.2
       }
     };
   }

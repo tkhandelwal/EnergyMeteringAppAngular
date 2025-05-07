@@ -1,5 +1,5 @@
 {
-  "/weatherforecast": {
+  "/api": {
     "target": "http://localhost:5266",
     "secure": false,
     "logLevel": "debug",

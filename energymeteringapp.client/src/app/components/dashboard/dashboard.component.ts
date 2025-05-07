@@ -1,5 +1,8 @@
+// src/app/components/dashboard/dashboard.component.ts
 import { Component, OnInit } from '@angular/core';
 import { ApiService } from '../../services/api.service';
+import { ChartService } from '../../services/chart.service';
+import { MeteringData, Classification } from '../../models/models';
 
 @Component({
   selector: 'app-dashboard',
@@ -7,12 +10,14 @@ import { ApiService } from '../../services/api.service';
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
-  meteringData: any[] = [];
-  classifications: any[] = [];
+  meteringData: MeteringData[] = [];
+  classifications: Classification[] = [];
   selectedClassification = 'all';
   timeRange = 'day';
   loading = false;
   error: string | null = null;
+
+  // Summary metrics
   summaryMetrics = {
     totalEnergy: 0,
     maxPower: 0,
@@ -20,13 +25,23 @@ export class DashboardComponent implements OnInit {
     readingCount: 0
   };
 
-  // Chart data properties
-  energyChartData: any;
-  powerChartData: any;
-  distributionChartData: any;
-  hourlyChartData: any;
+  // Plotly chart data
+  energyChartData: any[] = [];
+  energyChartLayout: any = {};
 
-  constructor(private apiService: ApiService) { }
+  powerChartData: any[] = [];
+  powerChartLayout: any = {};
+
+  distributionChartData: any[] = [];
+  distributionChartLayout: any = {};
+
+  hourlyChartData: any[] = [];
+  hourlyChartLayout: any = {};
+
+  constructor(
+    private apiService: ApiService,
+    private chartService: ChartService
+  ) { }
 
   ngOnInit(): void {
     this.fetchData();
@@ -68,7 +83,7 @@ export class DashboardComponent implements OnInit {
     this.updateCharts(filteredData);
   }
 
-  getFilteredData(): any[] {
+  getFilteredData(): MeteringData[] {
     let filtered = [...this.meteringData];
 
     // Filter by classification
@@ -99,7 +114,7 @@ export class DashboardComponent implements OnInit {
     return filtered;
   }
 
-  calculateSummaryMetrics(filteredData: any[]): void {
+  calculateSummaryMetrics(filteredData: MeteringData[]): void {
     if (!filteredData || filteredData.length === 0) {
       this.summaryMetrics = {
         totalEnergy: 0,
@@ -122,40 +137,48 @@ export class DashboardComponent implements OnInit {
     };
   }
 
-  updateCharts(filteredData: any[]): void {
+  updateCharts(filteredData: MeteringData[]): void {
     if (!filteredData || filteredData.length === 0) {
-      this.energyChartData = null;
-      this.powerChartData = null;
-      this.distributionChartData = null;
-      this.hourlyChartData = null;
+      this.energyChartData = [];
+      this.powerChartData = [];
+      this.distributionChartData = [];
+      this.hourlyChartData = [];
       return;
     }
 
     // Energy consumption over time chart
-    this.energyChartData = {
-      labels: filteredData.map(data => new Date(data.timestamp).toLocaleString()),
-      datasets: [{
-        label: 'Energy Consumption (kWh)',
-        data: filteredData.map(data => data.energyValue),
-        backgroundColor: 'rgba(66, 133, 244, 0.2)',
-        borderColor: 'rgb(66, 133, 244)',
-        borderWidth: 1
-      }]
-    };
+    this.energyChartData = [{
+      x: filteredData.map(data => new Date(data.timestamp)),
+      y: filteredData.map(data => data.energyValue),
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Energy Consumption (kWh)',
+      line: { color: 'rgb(66, 133, 244)', width: 2 }
+    }];
+
+    this.energyChartLayout = this.chartService.getLineChartLayout(
+      'Energy Consumption Over Time',
+      'Time',
+      'Energy (kWh)'
+    );
 
     // Power over time chart
-    this.powerChartData = {
-      labels: filteredData.map(data => new Date(data.timestamp).toLocaleString()),
-      datasets: [{
-        label: 'Power (kW)',
-        data: filteredData.map(data => data.power),
-        backgroundColor: 'rgba(255, 159, 64, 0.2)',
-        borderColor: 'rgb(255, 159, 64)',
-        borderWidth: 1
-      }]
-    };
+    this.powerChartData = [{
+      x: filteredData.map(data => new Date(data.timestamp)),
+      y: filteredData.map(data => data.power),
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Power (kW)',
+      line: { color: 'rgb(255, 159, 64)', width: 2 }
+    }];
 
-    // Energy distribution by classification chart
+    this.powerChartLayout = this.chartService.getLineChartLayout(
+      'Power Demand Over Time',
+      'Time',
+      'Power (kW)'
+    );
+
+    // Distribution by classification chart
     this.updateDistributionChart();
 
     // Hourly usage chart
@@ -174,25 +197,29 @@ export class DashboardComponent implements OnInit {
       energyByClass[classificationName] += data.energyValue;
     });
 
-    this.distributionChartData = {
-      labels: Object.keys(energyByClass),
-      datasets: [{
-        label: 'Energy Consumption (kWh)',
-        data: Object.values(energyByClass),
-        backgroundColor: [
-          'rgba(66, 133, 244, 0.7)',
-          'rgba(219, 68, 55, 0.7)',
-          'rgba(244, 180, 0, 0.7)',
-          'rgba(15, 157, 88, 0.7)',
-          'rgba(171, 71, 188, 0.7)',
-          'rgba(0, 172, 193, 0.7)'
-        ],
-        borderWidth: 1
-      }]
+    // Convert to arrays for Plotly
+    const labels = Object.keys(energyByClass);
+    const values = Object.values(energyByClass);
+
+    this.distributionChartData = [{
+      labels: labels,
+      values: values,
+      type: 'pie',
+      hole: 0.4,
+      marker: {
+        colors: this.chartService.getColorScale(labels.length)
+      },
+      textinfo: 'label+percent',
+      insidetextorientation: 'radial'
+    }];
+
+    this.distributionChartLayout = {
+      ...this.chartService.getDefaultLayout('Energy Distribution by Classification'),
+      showlegend: false
     };
   }
 
-  updateHourlyChart(filteredData: any[]): void {
+  updateHourlyChart(filteredData: MeteringData[]): void {
     // Group data by hour of day
     const hourlyData = Array(24).fill(0);
     const hourlyCount = Array(24).fill(0);
@@ -207,15 +234,23 @@ export class DashboardComponent implements OnInit {
     const hourlyAvg = hourlyData.map((total, i) =>
       hourlyCount[i] > 0 ? total / hourlyCount[i] : 0);
 
-    this.hourlyChartData = {
-      labels: Array.from({ length: 24 }, (_, i) => i),
-      datasets: [{
-        label: 'Avg. Power by Hour (kW)',
-        data: hourlyAvg,
-        backgroundColor: 'rgba(66, 133, 244, 0.7)',
-        borderColor: 'rgb(66, 133, 244)',
-        borderWidth: 1
-      }]
-    };
+    this.hourlyChartData = [{
+      x: Array.from({ length: 24 }, (_, i) => `${i}:00`),
+      y: hourlyAvg,
+      type: 'bar',
+      marker: {
+        color: 'rgba(66, 133, 244, 0.7)',
+        line: {
+          color: 'rgb(66, 133, 244)',
+          width: 1.5
+        }
+      }
+    }];
+
+    this.hourlyChartLayout = this.chartService.getBarChartLayout(
+      'Average Power by Hour of Day',
+      'Hour of Day',
+      'Average Power (kW)'
+    );
   }
 }

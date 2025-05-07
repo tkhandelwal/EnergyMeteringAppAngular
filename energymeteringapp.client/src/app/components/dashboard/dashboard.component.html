@@ -1,3 +1,4 @@
+<!-- src/app/components/dashboard/dashboard.component.html -->
 <div>
   <h2>Energy Dashboard</h2>
 
@@ -104,10 +105,11 @@
             No data available for the selected criteria.
           </div>
           <div *ngIf="!loading && meteringData.length > 0" style="height: 400px;">
-            <canvas *ngIf="energyChartData" baseChart
-                    [data]="energyChartData"
-                    [type]="'line'">
-            </canvas>
+            <plotly-plot *ngIf="energyChartData.length > 0"
+                         [data]="energyChartData"
+                         [layout]="energyChartLayout"
+                         [config]="{responsive: true}">
+            </plotly-plot>
           </div>
         </div>
       </div>
@@ -128,10 +130,11 @@
             No data available for the selected criteria.
           </div>
           <div *ngIf="!loading && meteringData.length > 0" style="height: 400px;">
-            <canvas *ngIf="powerChartData" baseChart
-                    [data]="powerChartData"
-                    [type]="'line'">
-            </canvas>
+            <plotly-plot *ngIf="powerChartData.length > 0"
+                         [data]="powerChartData"
+                         [layout]="powerChartLayout"
+                         [config]="{responsive: true}">
+            </plotly-plot>
           </div>
         </div>
       </div>
@@ -152,10 +155,11 @@
             No data available.
           </div>
           <div *ngIf="!loading && meteringData.length > 0" style="height: 400px;">
-            <canvas *ngIf="distributionChartData" baseChart
-                    [data]="distributionChartData"
-                    [type]="'doughnut'">
-            </canvas>
+            <plotly-plot *ngIf="distributionChartData.length > 0"
+                         [data]="distributionChartData"
+                         [layout]="distributionChartLayout"
+                         [config]="{responsive: true}">
+            </plotly-plot>
           </div>
         </div>
       </div>
@@ -173,10 +177,11 @@
             No data available for the selected criteria.
           </div>
           <div *ngIf="!loading && meteringData.length > 0" style="height: 400px;">
-            <canvas *ngIf="hourlyChartData" baseChart
-                    [data]="hourlyChartData"
-                    [type]="'bar'">
-            </canvas>
+            <plotly-plot *ngIf="hourlyChartData.length > 0"
+                         [data]="hourlyChartData"
+                         [layout]="hourlyChartLayout"
+                         [config]="{responsive: true}">
+            </plotly-plot>
           </div>
         </div>
       </div>

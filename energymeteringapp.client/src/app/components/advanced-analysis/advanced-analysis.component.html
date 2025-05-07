@@ -1,3 +1,4 @@
+<!-- src/app/components/advanced-analysis/advanced-analysis.component.html -->
 <div>
   <h2>Advanced Energy Analysis</h2>
 
@@ -93,7 +94,7 @@
     <div class="card-body">
       <h5 class="card-title">
         {{
-analysisConfig.viewType === 'hourlyHeatmap' ? 'Energy Usage by Hour and Day' :
+          analysisConfig.viewType === 'hourlyHeatmap' ? 'Energy Usage by Hour and Day' :
           analysisConfig.viewType === 'weekdayComparison' ? 'Average Energy Usage by Day of Week' :
           analysisConfig.viewType === 'consumptionTrend' ? 'Energy Consumption Trend' :
           'Energy Consumption by Classification'
@@ -111,11 +112,11 @@ analysisConfig.viewType === 'hourlyHeatmap' ? 'Energy Usage by Hour and Day' :
       </div>
 
       <div *ngIf="!loading && getFilteredData().length > 0" style="height: 500px;">
-        <canvas *ngIf="analysisData" baseChart
-                [type]="analysisConfig.viewType === 'hourlyHeatmap' ? 'scatter' :
-                 analysisConfig.viewType === 'consumptionTrend' ? 'line' : 'bar'"
-                [data]="analysisData"
-                [options]="chartOptions"></canvas>
+        <plotly-plot *ngIf="analysisData.length > 0"
+                     [data]="analysisData"
+                     [layout]="chartLayout"
+                     [config]="chartConfig">
+        </plotly-plot>
       </div>
 
       <div class="mt-3 bg-light p-3 rounded">
@@ -139,54 +140,6 @@ analysisConfig.viewType === 'hourlyHeatmap' ? 'Energy Usage by Hour and Day' :
           classifications. Use this to identify the most energy-intensive areas and prioritize
           energy efficiency investments.
         </p>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-body">
-      <h5 class="card-title">Advanced Analysis Options</h5>
-      <div class="row">
-        <div class="col-md-6">
-          <div class="mb-3">
-            <label class="form-label">Analytics Methods</label>
-            <div class="list-group">
-              <button type="button" class="list-group-item list-group-item-action" disabled>
-                <strong>Pattern Recognition</strong>: Identify recurring energy usage patterns
-              </button>
-              <button type="button" class="list-group-item list-group-item-action" disabled>
-                <strong>Anomaly Detection</strong>: Identify unusual energy consumption events
-              </button>
-              <button type="button" class="list-group-item list-group-item-action" disabled>
-                <strong>Energy Forecasting</strong>: Predict future energy consumption
-              </button>
-              <button type="button" class="list-group-item list-group-item-action" disabled>
-                <strong>Regression Analysis</strong>: Analyze relationships between variables
-              </button>
-            </div>
-            <small class="text-muted mt-1">* Additional analytics features coming soon</small>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="mb-3">
-            <label class="form-label">Additional Dimensions</label>
-            <div class="list-group">
-              <button type="button" class="list-group-item list-group-item-action" disabled>
-                <strong>Weather Data</strong>: Correlate energy usage with weather conditions
-              </button>
-              <button type="button" class="list-group-item list-group-item-action" disabled>
-                <strong>Occupancy Data</strong>: Analyze energy usage vs. building occupancy
-              </button>
-              <button type="button" class="list-group-item list-group-item-action" disabled>
-                <strong>Production Data</strong>: Correlate energy with production levels
-              </button>
-              <button type="button" class="list-group-item list-group-item-action" disabled>
-                <strong>Cost Analysis</strong>: Analyze energy costs with time-of-use rates
-              </button>
-            </div>
-            <small class="text-muted mt-1">* Additional data dimensions coming soon</small>
-          </div>
-        </div>
       </div>
     </div>
   </div>
