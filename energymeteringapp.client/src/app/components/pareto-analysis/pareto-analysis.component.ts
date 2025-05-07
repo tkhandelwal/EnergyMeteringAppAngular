@@ -2,6 +2,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { PlotlyModule } from 'angular-plotly.js';
+import * as Plotly from 'plotly.js-dist';
 import { ApiService } from '../../services/api.service';
 import { firstValueFrom } from 'rxjs';
 
@@ -10,7 +12,7 @@ import { firstValueFrom } from 'rxjs';
   templateUrl: './pareto-analysis.component.html',
   styleUrls: ['./pareto-analysis.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule, PlotlyModule]
 })
 export class ParetoAnalysisComponent implements OnInit {
   meteringData: any[] = [];
@@ -28,9 +30,10 @@ export class ParetoAnalysisComponent implements OnInit {
   // Data for Pareto chart and table
   paretoData: any[] = [];
 
-  // Chart configuration
-  chartData: any;
-  chartOptions: any;
+  // Plotly specific chart configuration
+  plotlyData: any[] = [];
+  plotlyLayout: any = {};
+  plotlyConfig: any = { responsive: true };
 
   constructor(private apiService: ApiService) { }
 
@@ -44,8 +47,8 @@ export class ParetoAnalysisComponent implements OnInit {
 
     // Fetch classifications and metering data in parallel
     Promise.all([
-      this.apiService.getClassifications().toPromise(),
-      this.apiService.getMeteringData().toPromise()
+      firstValueFrom(this.apiService.getClassifications()),
+      firstValueFrom(this.apiService.getMeteringData())
     ]).then(([classifications, meteringData]) => {
       this.classifications = classifications || [];
       this.meteringData = meteringData || [];
@@ -143,79 +146,65 @@ export class ParetoAnalysisComponent implements OnInit {
 
   updateChartConfig(): void {
     if (this.paretoData.length === 0) {
-      this.chartData = null;
+      this.plotlyData = [];
+      this.plotlyLayout = {};
       return;
     }
 
-    this.chartData = {
-      labels: this.paretoData.map(item => item.label),
-      datasets: [
-        {
-          label: this.formConfig.metricType === 'energy' ? 'Energy (kWh)' : 'Power (kW)',
-          data: this.paretoData.map(item => item.value),
-          backgroundColor: 'rgba(55, 128, 191, 0.7)',
-          order: 1
-        },
-        {
-          label: 'Cumulative %',
-          data: this.paretoData.map(item => item.cumulativePercent),
-          type: 'line',
-          backgroundColor: 'rgba(255, 99, 132, 0.2)',
-          borderColor: 'rgba(255, 99, 132, 1)',
-          borderWidth: 2,
-          pointRadius: 4,
-          yAxisID: 'percentage',
-          order: 0
-        }
-      ]
+    // Bar chart data
+    const barTrace = {
+      x: this.paretoData.map(item => item.label),
+      y: this.paretoData.map(item => item.value),
+      type: 'bar',
+      name: this.formConfig.metricType === 'energy' ? 'Energy (kWh)' : 'Power (kW)',
+      marker: {
+        color: 'rgba(55, 128, 191, 0.7)'
+      }
     };
 
-    this.chartOptions = {
-      responsive: true,
-      scales: {
-        x: {
-          title: {
-            display: true,
-            text: this.getXAxisLabel()
-          },
-          ticks: {
-            autoSkip: false,
-            maxRotation: 45,
-            minRotation: 45
-          }
-        },
-        y: {
-          title: {
-            display: true,
-            text: this.formConfig.metricType === 'energy' ? 'Energy (kWh)' : 'Power (kW)'
-          },
-          beginAtZero: true
-        },
-        percentage: {
-          position: 'right',
-          title: {
-            display: true,
-            text: 'Cumulative Percentage'
-          },
-          min: 0,
-          max: 100,
-          ticks: {
-            callback: function (value: any) {
-              return value + '%';
-            }
-          }
-        }
+    // Line chart data for cumulative percentage
+    const lineTrace = {
+      x: this.paretoData.map(item => item.label),
+      y: this.paretoData.map(item => item.cumulativePercent),
+      type: 'scatter',
+      mode: 'lines+markers',
+      name: 'Cumulative %',
+      yaxis: 'y2',
+      line: {
+        color: 'rgba(255, 99, 132, 1)'
       },
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: function (context: any) {
-              const label = context.dataset.label || '';
-              const value = context.parsed.y;
-              return label + ': ' + value + (context.datasetIndex === 1 ? '%' : '');
-            }
-          }
-        }
+      marker: {
+        color: 'rgba(255, 99, 132, 1)'
+      }
+    };
+
+    this.plotlyData = [barTrace, lineTrace];
+
+    this.plotlyLayout = {
+      title: 'Pareto Analysis',
+      xaxis: {
+        title: this.getXAxisLabel(),
+        tickangle: -45
+      },
+      yaxis: {
+        title: this.formConfig.metricType === 'energy' ? 'Energy (kWh)' : 'Power (kW)'
+      },
+      yaxis2: {
+        title: 'Cumulative %',
+        titlefont: { color: 'rgb(255, 99, 132)' },
+        tickfont: { color: 'rgb(255, 99, 132)' },
+        overlaying: 'y',
+        side: 'right',
+        range: [0, 100],
+        ticksuffix: '%'
+      },
+      height: 500,
+      margin: {
+        l: 50,
+        r: 50,
+        b: 100,
+        t: 50,
+        pad: 4
       }
     };
   }

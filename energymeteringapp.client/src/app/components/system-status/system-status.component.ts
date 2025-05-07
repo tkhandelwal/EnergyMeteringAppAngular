@@ -6,7 +6,7 @@ import { ApiService } from '../../services/api.service';
 @Component({
   selector: 'app-system-status',
   templateUrl: './system-status.component.html',
-  styleUrls: ['./system-status.component.css'],
+  //styleUrls: ['./system-status.component.css'],
   standalone: true,
   imports: [CommonModule]
 })

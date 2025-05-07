@@ -1,4 +1,4 @@
-// src/app/components/advanced-analysis/advanced-analysis.component.ts
+//ssrc/app/components/advanced-analysis/advanced-analysis.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11,7 +11,7 @@ import { firstValueFrom } from 'rxjs';
 @Component({
   selector: 'app-advanced-analysis',
   templateUrl: './advanced-analysis.component.html',
-  styleUrls: ['./advanced-analysis.component.css'],
+  //styleUrls: ['./advanced-analysis.component.css'],
   standalone: true,
   imports: [CommonModule, FormsModule, PlotlyModule]
 })

@@ -7,7 +7,7 @@ import { ApiService } from '../../services/api.service';
 @Component({
   selector: 'app-energy-flow-analysis',
   templateUrl: './energy-flow-analysis.component.html',
-  styleUrls: ['./energy-flow-analysis.component.css'],
+  //styleUrls: ['./energy-flow-analysis.component.css'],
   standalone: true,
   imports: [CommonModule, FormsModule]
 })

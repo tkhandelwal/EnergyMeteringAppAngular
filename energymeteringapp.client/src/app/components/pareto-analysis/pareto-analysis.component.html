@@ -76,10 +76,11 @@
       </div>
 
       <div *ngIf="!loading && paretoData.length > 0" style="height: 500px;">
-        <canvas *ngIf="chartData" baseChart
-                [type]="'bar'"
-                [data]="chartData"
-                [options]="chartOptions"></canvas>
+        <plotly-plot *ngIf="chartData"
+                     [data]="plotlyData"
+                     [layout]="plotlyLayout"
+                     [config]="{responsive: true}">
+        </plotly-plot>
 
         <div class="text-center mt-3 text-muted">
           <small>

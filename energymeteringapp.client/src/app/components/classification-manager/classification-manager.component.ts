@@ -7,7 +7,7 @@ import { ApiService } from '../../services/api.service';
 @Component({
   selector: 'app-classification-manager',
   templateUrl: './classification-manager.component.html',
-  styleUrls: ['./classification-manager.component.css'],
+  //styleUrls: ['./classification-manager.component.css'],
   standalone: true,
   imports: [CommonModule, FormsModule]
 })

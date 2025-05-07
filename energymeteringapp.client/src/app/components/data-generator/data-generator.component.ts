@@ -7,7 +7,7 @@ import { ApiService } from '../../services/api.service';
 @Component({
   selector: 'app-data-generator',
   templateUrl: './data-generator.component.html',
-  styleUrls: ['./data-generator.component.css'],
+  //styleUrls: ['./data-generator.component.css'],
   standalone: true,
   imports: [CommonModule, FormsModule]
 })

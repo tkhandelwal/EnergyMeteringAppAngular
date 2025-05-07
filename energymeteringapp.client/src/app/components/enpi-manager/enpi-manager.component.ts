@@ -7,7 +7,7 @@ import { ApiService } from '../../services/api.service';
 @Component({
   selector: 'app-enpi-manager',
   templateUrl: './enpi-manager.component.html',
-  styleUrls: ['./enpi-manager.component.css'],
+  //styleUrls: ['./enpi-manager.component.css'],
   standalone: true,
   imports: [CommonModule, FormsModule]
 })
