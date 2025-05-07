@@ -1,10 +1,15 @@
+// src/app/components/energy-flow-analysis/energy-flow-analysis.component.ts
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-energy-flow-analysis',
   templateUrl: './energy-flow-analysis.component.html',
-  styleUrls: ['./energy-flow-analysis.component.css']
+  styleUrls: ['./energy-flow-analysis.component.css'],
+  standalone: true,
+  imports: [CommonModule, FormsModule]
 })
 export class EnergyFlowAnalysisComponent implements OnInit {
   meteringData: any[] = [];
@@ -13,11 +18,11 @@ export class EnergyFlowAnalysisComponent implements OnInit {
   error: string | null = null;
 
   dateRange = {
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
-    endDate: new Date().toISOString().split('T')[0] // today
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
   };
 
-  view = 'sankey'; // 'sankey', 'treemap', or 'heatmap'
+  view = 'sankey';
 
   // Data for different visualizations
   sankeyData: any = null;

@@ -1,10 +1,15 @@
+// src/app/components/classification-manager/classification-manager.component.ts
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-classification-manager',
   templateUrl: './classification-manager.component.html',
-  styleUrls: ['./classification-manager.component.css']
+  styleUrls: ['./classification-manager.component.css'],
+  standalone: true,
+  imports: [CommonModule, FormsModule]
 })
 export class ClassificationManagerComponent implements OnInit {
   classifications: any[] = [];

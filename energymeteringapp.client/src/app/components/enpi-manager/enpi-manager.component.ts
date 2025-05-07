@@ -1,10 +1,15 @@
+// src/app/components/enpi-manager/enpi-manager.component.ts
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-enpi-manager',
   templateUrl: './enpi-manager.component.html',
-  styleUrls: ['./enpi-manager.component.css']
+  styleUrls: ['./enpi-manager.component.css'],
+  standalone: true,
+  imports: [CommonModule, FormsModule]
 })
 export class EnPIManagerComponent implements OnInit {
   classifications: any[] = [];
@@ -15,10 +20,10 @@ export class EnPIManagerComponent implements OnInit {
     name: '',
     formula: 'EnergyPerHour',
     classificationId: '',
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
-    endDate: new Date().toISOString().split('T')[0], // today
-    baselineStartDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 60 days ago
-    baselineEndDate: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 31 days ago
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+    baselineStartDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    baselineEndDate: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     useBaseline: true
   };
 

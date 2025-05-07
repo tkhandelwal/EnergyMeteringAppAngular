@@ -1,13 +1,19 @@
 // src/app/components/advanced-analysis/advanced-analysis.component.ts
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { PlotlyModule } from 'angular-plotly.js';
 import { ApiService } from '../../services/api.service';
 import { ChartService } from '../../services/chart.service';
 import { MeteringData, Classification } from '../../models/models';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-advanced-analysis',
   templateUrl: './advanced-analysis.component.html',
-  styleUrls: ['./advanced-analysis.component.css']
+  styleUrls: ['./advanced-analysis.component.css'],
+  standalone: true,
+  imports: [CommonModule, FormsModule, PlotlyModule]
 })
 export class AdvancedAnalysisComponent implements OnInit {
   meteringData: MeteringData[] = [];
@@ -16,8 +22,8 @@ export class AdvancedAnalysisComponent implements OnInit {
   error: string | null = null;
 
   analysisConfig = {
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
-    endDate: new Date().toISOString().split('T')[0], // today
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
     classificationIds: [] as number[],
     viewType: 'hourlyHeatmap',
     comparisonType: 'none'

@@ -1,13 +1,19 @@
 // src/app/components/dashboard/dashboard.component.ts
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { PlotlyModule } from 'angular-plotly.js';
 import { ApiService } from '../../services/api.service';
 import { ChartService } from '../../services/chart.service';
 import { MeteringData, Classification } from '../../models/models';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.css']
+  styleUrls: ['./dashboard.component.css'],
+  standalone: true,
+  imports: [CommonModule, FormsModule, PlotlyModule]
 })
 export class DashboardComponent implements OnInit {
   meteringData: MeteringData[] = [];
@@ -47,24 +53,26 @@ export class DashboardComponent implements OnInit {
     this.fetchData();
   }
 
-  fetchData(): void {
+  async fetchData(): Promise<void> {
     this.loading = true;
     this.error = null;
 
-    // Fetch classifications and metering data in parallel
-    Promise.all([
-      this.apiService.getClassifications().toPromise(),
-      this.apiService.getMeteringData().toPromise()
-    ]).then(([classifications, meteringData]) => {
+    try {
+      // Fetch classifications and metering data in parallel
+      const [classifications, meteringData] = await Promise.all([
+        firstValueFrom(this.apiService.getClassifications()),
+        firstValueFrom(this.apiService.getMeteringData())
+      ]);
+
       this.classifications = classifications || [];
       this.meteringData = meteringData || [];
       this.updateDashboard();
-    }).catch(error => {
+    } catch (error) {
       console.error('Error fetching dashboard data:', error);
       this.error = 'Failed to load data. Please try again later.';
-    }).finally(() => {
+    } finally {
       this.loading = false;
-    });
+    }
   }
 
   handleClassificationChange(event: any): void {

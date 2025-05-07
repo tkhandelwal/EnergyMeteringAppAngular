@@ -1,21 +1,26 @@
+// src/app/components/data-generator/data-generator.component.ts
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 
 @Component({
-    selector: 'app-data-generator',
-    templateUrl: './data-generator.component.html',
-    styleUrls: ['./data-generator.component.css']
+  selector: 'app-data-generator',
+  templateUrl: './data-generator.component.html',
+  styleUrls: ['./data-generator.component.css'],
+  standalone: true,
+  imports: [CommonModule, FormsModule]
 })
 export class DataGeneratorComponent implements OnInit {
-    classifications: any[] = [];
-    formData = {
-        classificationId: '', // This should start as a string, not a number
-        startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0],
-        intervalMinutes: 15,
-        baseValue: 10,
-        variance: 2
-    };
+  classifications: any[] = [];
+  formData = {
+    classificationId: '', // This should start as a string, not a number
+    startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+    intervalMinutes: 15,
+    baseValue: 10,
+    variance: 2
+  };
   alert = { show: false, message: '', variant: '' };
   loading = false;
 

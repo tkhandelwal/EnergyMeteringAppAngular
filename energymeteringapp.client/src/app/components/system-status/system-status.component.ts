@@ -1,10 +1,14 @@
+// src/app/components/system-status/system-status.component.ts
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-system-status',
   templateUrl: './system-status.component.html',
-  styleUrls: ['./system-status.component.css']
+  styleUrls: ['./system-status.component.css'],
+  standalone: true,
+  imports: [CommonModule]
 })
 export class SystemStatusComponent implements OnInit {
   statuses = {

@@ -1,10 +1,16 @@
+// src/app/components/pareto-analysis/pareto-analysis.component.ts
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-pareto-analysis',
   templateUrl: './pareto-analysis.component.html',
-  styleUrls: ['./pareto-analysis.component.css']
+  styleUrls: ['./pareto-analysis.component.css'],
+  standalone: true,
+  imports: [CommonModule, FormsModule]
 })
 export class ParetoAnalysisComponent implements OnInit {
   meteringData: any[] = [];
@@ -13,10 +19,10 @@ export class ParetoAnalysisComponent implements OnInit {
   error: string | null = null;
 
   formConfig = {
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
-    endDate: new Date().toISOString().split('T')[0], // today
-    groupBy: 'classification', // classification, dayOfWeek, hourOfDay
-    metricType: 'energy' // energy, power
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+    groupBy: 'classification',
+    metricType: 'energy'
   };
 
   // Data for Pareto chart and table

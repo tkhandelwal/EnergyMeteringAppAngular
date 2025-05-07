@@ -1,12 +1,16 @@
 // src/app/components/reports/reports.component.ts
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
-import { firstValueFrom } from 'rxjs'; // Add this import
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-reports',
   templateUrl: './reports.component.html',
-  styleUrls: ['./reports.component.css']
+  styleUrls: ['./reports.component.css'],
+  standalone: true,
+  imports: [CommonModule, FormsModule]
 })
 export class ReportsComponent implements OnInit {
   meteringData: any[] = [];
