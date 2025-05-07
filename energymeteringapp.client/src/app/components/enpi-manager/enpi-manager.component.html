@@ -1,3 +1,4 @@
+<!-- energymeteringapp.client/src/app/components/enpi-manager/enpi-manager.component.html -->
 <div>
   <h2>Energy Performance Indicators (EnPI)</h2>
 
@@ -132,12 +133,20 @@
     </div>
   </div>
 
-  <!-- EnPI visualization would go here, using ng-chartjs -->
+  <!-- EnPI visualization -->
   <div *ngIf="enpiList.length > 0" class="card mb-4">
     <div class="card-body">
       <h5 class="card-title">EnPI Visualization</h5>
-      <div style="height: 400px;">
-        <p>Charts will be shown here when rendered with chart.js</p>
+      <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+      <div *ngIf="!loading && enpiList.length > 0" style="height: 500px;">
+        <plotly-plot [data]="enpiChartData"
+                     [layout]="enpiChartLayout"
+                     [config]="{responsive: true}">
+        </plotly-plot>
       </div>
     </div>
   </div>
@@ -172,7 +181,7 @@
               <td>{{enpi.baselineValue.toFixed(2)}}</td>
               <td>
                 {{
-enpi.baselineValue > 0 ?
+                  enpi.baselineValue > 0 ?
                   ((enpi.baselineValue - enpi.currentValue) / enpi.baselineValue * 100).toFixed(2) + '%' :
                   'N/A'
                 }}

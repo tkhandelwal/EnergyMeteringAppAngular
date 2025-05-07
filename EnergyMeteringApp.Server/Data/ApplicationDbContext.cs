@@ -1,4 +1,5 @@
-﻿using EnergyMeteringApp.Models;
+﻿// EnergyMeteringApp.Server/Data/ApplicationDbContext.cs (additions)
+using EnergyMeteringApp.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Reflection.Emit;
@@ -18,6 +19,7 @@ namespace EnergyMeteringApp.Data
         public DbSet<EnPIDefinition> EnPIDefinitions { get; set; }
         public DbSet<Target> Targets { get; set; }
         public DbSet<Baseline> Baselines { get; set; }
+        public DbSet<ActionPlan> ActionPlans { get; set; } // Added
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -52,6 +54,13 @@ namespace EnergyMeteringApp.Data
                 .HasOne(b => b.Classification)
                 .WithMany(c => c.Baselines)
                 .HasForeignKey(b => b.ClassificationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // New relationship for ActionPlans
+            modelBuilder.Entity<ActionPlan>()
+                .HasOne(a => a.Classification)
+                .WithMany()
+                .HasForeignKey(a => a.ClassificationId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Add seed data if needed

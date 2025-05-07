@@ -1,0 +1,280 @@
+<!-- energymeteringapp.client/src/app/components/action-plans/action-plans.component.html -->
+<div>
+  <h2>Energy Improvement Action Plans</h2>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{error}}
+    <button type="button" class="btn-close" (click)="error = null" aria-label="Close"></button>
+  </div>
+
+  <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
+    {{success}}
+    <button type="button" class="btn-close" (click)="success = null" aria-label="Close"></button>
+  </div>
+
+  <!-- Action Plans Stats and Charts -->
+  <div *ngIf="actionPlans.length > 0" class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Action Plans Overview</h5>
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+              <h5 class="card-title">Total Plans</h5>
+              <h3>{{actionPlans.length}}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-success text-white">
+            <div class="card-body text-center">
+              <h5 class="card-title">Completed</h5>
+              <h3>{{actionPlans.filter(p => p.status === 'Completed').length}}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+              <h5 class="card-title">In Progress</h5>
+              <h3>{{actionPlans.filter(p => p.status === 'InProgress').length}}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-info text-white">
+            <div class="card-body text-center">
+              <h5 class="card-title">Total Savings</h5>
+              <h3>{{actionPlans.reduce((sum, p) => sum + p.energySavingEstimate, 0)}} kWh</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="chartData && chartData.length > 0" style="height: 400px;">
+        <plotly-plot [data]="chartData"
+                     [layout]="chartLayout"
+                     [config]="{responsive: true}">
+        </plotly-plot>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Action Plan Form -->
+    <div class="col-md-6">
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">{{editingPlan ? 'Edit Action Plan' : 'Create New Action Plan'}}</h5>
+          <form (ngSubmit)="handleSubmit($event)">
+            <div class="mb-3">
+              <label for="name" class="form-label">Name</label>
+              <input type="text"
+                     class="form-control"
+                     id="name"
+                     name="name"
+                     [(ngModel)]="formData.name"
+                     placeholder="Enter action plan name"
+                     required />
+            </div>
+            <div class="mb-3">
+              <label for="classificationId" class="form-label">Classification</label>
+              <select class="form-select"
+                      id="classificationId"
+                      name="classificationId"
+                      [(ngModel)]="formData.classificationId"
+                      required>
+                <option *ngFor="let classification of classifications" [value]="classification.id">
+                  {{classification.name}} ({{classification.type}})
+                </option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control"
+                        id="description"
+                        name="description"
+                        [(ngModel)]="formData.description"
+                        rows="3"></textarea>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="energySavingEstimate" class="form-label">Energy Saving Estimate (kWh)</label>
+                  <input type="number"
+                         class="form-control"
+                         id="energySavingEstimate"
+                         name="energySavingEstimate"
+                         [(ngModel)]="formData.energySavingEstimate"
+                         min="0" />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="costEstimate" class="form-label">Cost Estimate ($)</label>
+                  <input type="number"
+                         class="form-control"
+                         id="costEstimate"
+                         name="costEstimate"
+                         [(ngModel)]="formData.costEstimate"
+                         min="0" />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="startDate" class="form-label">Start Date</label>
+                  <input type="date"
+                         class="form-control"
+                         id="startDate"
+                         name="startDate"
+                         [(ngModel)]="formData.startDate"
+                         required />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="endDate" class="form-label">End Date</label>
+                  <input type="date"
+                         class="form-control"
+                         id="endDate"
+                         name="endDate"
+                         [(ngModel)]="formData.endDate"
+                         required />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="status" class="form-label">Status</label>
+                  <select class="form-select"
+                          id="status"
+                          name="status"
+                          [(ngModel)]="formData.status"
+                          required>
+                    <option *ngFor="let status of statusOptions" [value]="status.value">
+                      {{status.label}}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="responsible" class="form-label">Responsible Person</label>
+                  <input type="text"
+                         class="form-control"
+                         id="responsible"
+                         name="responsible"
+                         [(ngModel)]="formData.responsible" />
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="notes" class="form-label">Notes</label>
+              <textarea class="form-control"
+                        id="notes"
+                        name="notes"
+                        [(ngModel)]="formData.notes"
+                        rows="2"></textarea>
+            </div>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary" [disabled]="loading">
+                <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                {{editingPlan ? 'Update Action Plan' : 'Create Action Plan'}}
+              </button>
+              <button *ngIf="editingPlan" type="button" class="btn btn-secondary" (click)="resetForm()">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <!-- Action Plan Details -->
+      <div *ngIf="viewingPlan" class="card mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title">Action Plan Details</h5>
+            <button type="button" class="btn-close" (click)="viewingPlan = null"></button>
+          </div>
+          <div class="mb-3">
+            <h6>{{viewingPlan.name}}</h6>
+            <span class="badge {{getStatusBadge(viewingPlan.status)}}">{{getStatusLabel(viewingPlan.status)}}</span>
+          </div>
+          <div class="mb-3">
+            <strong>Classification:</strong> {{getClassificationName(viewingPlan.classificationId)}}
+          </div>
+          <div class="mb-3">
+            <strong>Description:</strong> {{viewingPlan.description}}
+          </div>
+          <div class="row mb-3">
+            <div class="col-6">
+              <strong>Energy Saving:</strong> {{viewingPlan.energySavingEstimate}} kWh
+            </div>
+            <div class="col-6">
+              <strong>Cost Estimate:</strong> ${{viewingPlan.costEstimate}}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-6">
+              <strong>Start Date:</strong> {{viewingPlan.startDate | date:'yyyy-MM-dd'}}
+            </div>
+            <div class="col-6">
+              <strong>End Date:</strong> {{viewingPlan.endDate | date:'yyyy-MM-dd'}}
+            </div>
+          </div>
+          <div class="mb-3">
+            <strong>Responsible:</strong> {{viewingPlan.responsible}}
+          </div>
+          <div class="mb-3">
+            <strong>Notes:</strong> {{viewingPlan.notes}}
+          </div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary" (click)="editPlan(viewingPlan)">
+              Edit
+            </button>
+            <button type="button" class="btn btn-danger" (click)="handleDelete(viewingPlan.id)">
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Plans List -->
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Action Plans</h5>
+          <div *ngIf="loading && actionPlans.length === 0" class="text-center my-4">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <div *ngIf="!loading && actionPlans.length === 0" class="alert alert-info">
+            No action plans found. Create your first plan using the form.
+          </div>
+          <div *ngIf="actionPlans.length > 0" class="list-group">
+            <a *ngFor="let plan of actionPlans"
+               href="javascript:void(0)"
+               class="list-group-item list-group-item-action"
+               [class.active]="viewingPlan && viewingPlan.id === plan.id"
+               (click)="viewPlan(plan)">
+              <div class="d-flex w-100 justify-content-between align-items-center">
+                <h6 class="mb-1">{{plan.name}}</h6>
+                <span class="badge {{getStatusBadge(plan.status)}}">{{getStatusLabel(plan.status)}}</span>
+              </div>
+              <p class="mb-1 text-truncate">{{plan.description}}</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <small>{{getClassificationName(plan.classificationId)}}</small>
+                <small>{{plan.startDate | date:'yyyy-MM-dd'}} - {{plan.endDate | date:'yyyy-MM-dd'}}</small>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

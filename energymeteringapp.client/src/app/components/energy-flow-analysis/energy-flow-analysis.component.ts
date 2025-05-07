@@ -1,9 +1,10 @@
-// src/app/components/energy-flow-analysis/energy-flow-analysis.component.ts
+// energymeteringapp.client/src/app/components/energy-flow-analysis/energy-flow-analysis.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { PlotlyModule } from 'angular-plotly.js';
+import { ChartService } from '../../services/chart.service';
 
 // Define interfaces for tree node structure
 interface TreeNode {
@@ -51,7 +52,18 @@ export class EnergyFlowAnalysisComponent implements OnInit {
   treemapData: any = null;
   heatmapData: any = null;
 
-  constructor(private apiService: ApiService) { }
+  // Plotly data objects
+  sankeyPlotData: any[] = [];
+  sankeyPlotLayout: any = {};
+  treemapPlotData: any[] = [];
+  treemapPlotLayout: any = {};
+  heatmapPlotData: any[] = [];
+  heatmapPlotLayout: any = {};
+
+  constructor(
+    private apiService: ApiService,
+    private chartService: ChartService
+  ) { }
 
   ngOnInit(): void {
     this.fetchClassifications();
@@ -132,7 +144,7 @@ export class EnergyFlowAnalysisComponent implements OnInit {
   }
 
   updateSankeyData(filteredData: any[]): void {
-    // Create a mapping of classification types
+    // Create mappings for classifications and types
     const typeMap: { [key: number]: string } = {};
     this.classifications.forEach(classification => {
       typeMap[classification.id] = classification.type;
@@ -140,7 +152,6 @@ export class EnergyFlowAnalysisComponent implements OnInit {
 
     // Group data by type and classification
     const energyByType: { [key: string]: { [key: string]: number } } = {};
-
     filteredData.forEach(data => {
       const type = typeMap[data.classificationId] || 'Unknown';
       const name = data.classification?.name || 'Unknown';
@@ -148,65 +159,84 @@ export class EnergyFlowAnalysisComponent implements OnInit {
       if (!energyByType[type]) {
         energyByType[type] = {};
       }
-
       if (!energyByType[type][name]) {
         energyByType[type][name] = 0;
       }
-
       energyByType[type][name] += data.energyValue;
     });
 
-    // Initialize sankeyData as a non-null object before using it
-    this.sankeyData = {
-      nodes: [],
-      links: []
-    };
-
-    // Add the root node
-    this.sankeyData.nodes.push({ name: 'Data Center' });
+    // Build nodes and links for Sankey diagram
+    const nodes: any[] = [{ name: 'Total Energy' }];
+    const links: any[] = [];
     let nodeIndex = 0;
+    const typeNodeIndices: { [key: string]: number } = {};
 
-    // Process each type
+    // First add all type nodes
     Object.keys(energyByType).forEach(type => {
       nodeIndex++;
-      const typeNodeIndex = nodeIndex;
-      this.sankeyData!.nodes.push({ name: type });
+      typeNodeIndices[type] = nodeIndex;
+      nodes.push({ name: type });
+    });
+
+    // Then add all classification nodes and create links
+    Object.entries(energyByType).forEach(([type, classifications]) => {
+      const typeNodeIndex = typeNodeIndices[type];
 
       // Calculate total for this type
-      const typeTotal = Object.values(energyByType[type])
+      const typeTotal = Object.values(classifications)
         .reduce((sum, value) => sum + value, 0);
 
-      // Link from root to type
-      this.sankeyData!.links.push({
+      // Link from total to type
+      links.push({
         source: 0,
         target: typeNodeIndex,
         value: typeTotal
       });
 
-      // Process classifications within this type
-      Object.keys(energyByType[type]).forEach(name => {
+      // Add each classification within this type
+      Object.entries(classifications).forEach(([name, value]) => {
         nodeIndex++;
-        this.sankeyData!.nodes.push({ name });
+        nodes.push({ name });
 
         // Link from type to classification
-        this.sankeyData!.links.push({
+        links.push({
           source: typeNodeIndex,
           target: nodeIndex,
-          value: energyByType[type][name]
+          value: value
         });
       });
     });
+
+    // Set up Plotly Sankey data
+    this.sankeyData = { nodes, links };
+
+    this.sankeyPlotData = [{
+      type: "sankey",
+      orientation: "h",
+      node: {
+        pad: 15,
+        thickness: 20,
+        line: { color: "black", width: 0.5 },
+        label: nodes.map(n => n.name),
+        color: this.chartService.getColorScale(nodes.length)
+      },
+      link: {
+        source: links.map(l => l.source),
+        target: links.map(l => l.target),
+        value: links.map(l => l.value),
+        color: links.map(l => Array.isArray(l.color) ? l.color : 'rgba(55, 128, 191, 0.3)')
+      }
+    }];
+
+    this.sankeyPlotLayout = {
+      title: "Energy Flow Sankey Diagram",
+      font: { size: 12 },
+      height: 600
+    };
   }
 
   updateTreemapData(filteredData: any[]): void {
-    // This is a placeholder for treemap data
-    // In a real implementation, this would be formatted for a specific treemap library
-    this.treemapData = {
-      name: 'Data Center',
-      children: []
-    };
-
-    // Group by classification type
+    // Group by classification type and name
     const energyByType: { [key: string]: { [key: string]: number } } = {};
     const typeMap: { [key: number]: string } = {};
 
@@ -229,24 +259,49 @@ export class EnergyFlowAnalysisComponent implements OnInit {
       energyByType[type][name] += data.energyValue;
     });
 
-    // Create the treemap data structure
-    Object.keys(energyByType).forEach(type => {
-      const typeNode: TreeNode = {
-        name: type,
-        value: 0,
-        children: []
-      };
+    // Create labels and values for treemap
+    const labels: string[] = ['Total'];
+    const parents: string[] = [''];
+    const values: number[] = [0];
+    let totalEnergy = 0;
 
-      Object.keys(energyByType[type]).forEach(name => {
-        const value = energyByType[type][name];
-        typeNode.children!.push({
-          name,
-          value
-        });
+    // Add type nodes
+    Object.entries(energyByType).forEach(([type, classifications]) => {
+      const typeTotal = Object.values(classifications).reduce((sum, value) => sum + value, 0);
+      totalEnergy += typeTotal;
+
+      labels.push(type);
+      parents.push('Total');
+      values.push(typeTotal);
+
+      // Add classification nodes
+      Object.entries(classifications).forEach(([name, value]) => {
+        labels.push(`${name}`);
+        parents.push(type);
+        values.push(value);
       });
-
-      this.treemapData.children.push(typeNode);
     });
+
+    // Update root node value
+    values[0] = totalEnergy;
+
+    // Create treemap data
+    this.treemapPlotData = [{
+      type: 'treemap',
+      labels: labels,
+      parents: parents,
+      values: values,
+      textinfo: 'label+value+percent parent',
+      marker: {
+        colorscale: 'Viridis'
+      }
+    }];
+
+    this.treemapPlotLayout = {
+      title: 'Energy Consumption by Classification',
+      height: 600,
+      margin: { l: 0, r: 0, b: 0, t: 50 }
+    };
   }
 
   updateHeatmapData(filteredData: any[]): void {
@@ -272,15 +327,27 @@ export class EnergyFlowAnalysisComponent implements OnInit {
       )
     );
 
-    // Prepare data for chart.js heatmap
-    this.heatmapData = {
-      datasets: [{
-        label: 'Power (kW)',
-        data: this.flattenHeatmapData(avgData),
-        backgroundColor: 'rgba(0, 0, 255, 0.5)',
-        borderColor: 'rgb(0, 0, 255)',
-        borderWidth: 1
-      }]
+    // Prepare data for plotly heatmap
+    this.heatmapPlotData = [{
+      z: avgData,
+      x: Array.from({ length: 24 }, (_, i) => `${i}:00`),
+      y: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      type: 'heatmap',
+      colorscale: 'Viridis',
+      colorbar: {
+        title: 'Power (kW)'
+      }
+    }];
+
+    this.heatmapPlotLayout = {
+      title: 'Energy Usage Pattern by Hour and Day',
+      xaxis: {
+        title: 'Hour of Day'
+      },
+      yaxis: {
+        title: 'Day of Week'
+      },
+      height: 500
     };
   }
 

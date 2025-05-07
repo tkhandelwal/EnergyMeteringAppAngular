@@ -1,3 +1,4 @@
+<!-- energymeteringapp.client/src/app/components/energy-flow-analysis/energy-flow-analysis.component.html -->
 <div>
   <h2>Energy Flow Analysis</h2>
 
@@ -63,11 +64,13 @@
 
       <!-- Sankey Diagram View -->
       <div *ngIf="!loading && view === 'sankey' && sankeyData && getFilteredData().length > 0" style="height: 600px;">
-        <p class="text-center">
-          Sankey diagram visualization would appear here.<br>
-          (Implementation requires a specific Sankey diagram library)
-        </p>
-        <div class="text-center text-muted">
+        <h5 class="card-title mb-3">Energy Flow Sankey Diagram</h5>
+        <plotly-plot *ngIf="sankeyPlotData && sankeyPlotData.length > 0"
+                     [data]="sankeyPlotData"
+                     [layout]="sankeyPlotLayout"
+                     [config]="{responsive: true}">
+        </plotly-plot>
+        <div class="text-center text-muted mt-2">
           <small>
             The Sankey diagram shows energy flow from overall facility through classification types to individual assets.
             Line width represents energy consumption magnitude.
@@ -77,11 +80,13 @@
 
       <!-- Treemap View -->
       <div *ngIf="!loading && view === 'treemap' && treemapData && getFilteredData().length > 0" style="height: 600px;">
-        <p class="text-center">
-          Treemap visualization would appear here.<br>
-          (Implementation requires a specific Treemap library)
-        </p>
-        <div class="text-center text-muted">
+        <h5 class="card-title mb-3">Energy Consumption Treemap</h5>
+        <plotly-plot *ngIf="treemapPlotData && treemapPlotData.length > 0"
+                     [data]="treemapPlotData"
+                     [layout]="treemapPlotLayout"
+                     [config]="{responsive: true}">
+        </plotly-plot>
+        <div class="text-center text-muted mt-2">
           <small>
             The Treemap shows hierarchical energy consumption distribution with rectangle size representing energy magnitude.
             Colors differentiate classification types.
@@ -91,11 +96,13 @@
 
       <!-- Heatmap View -->
       <div *ngIf="!loading && view === 'heatmap' && heatmapData && getFilteredData().length > 0" style="height: 500px;">
-        <p class="text-center">
-          Heatmap visualization would appear here.<br>
-          (Implementation requires a specific Heatmap library)
-        </p>
-        <div class="text-center text-muted">
+        <h5 class="card-title mb-3">Energy Usage Pattern Heatmap</h5>
+        <plotly-plot *ngIf="heatmapPlotData && heatmapPlotData.length > 0"
+                     [data]="heatmapPlotData"
+                     [layout]="heatmapPlotLayout"
+                     [config]="{responsive: true}">
+        </plotly-plot>
+        <div class="text-center text-muted mt-2">
           <small>
             The heatmap displays energy usage patterns by hour of day (x-axis) vs day of week (y-axis).
             Color intensity represents average power demand.

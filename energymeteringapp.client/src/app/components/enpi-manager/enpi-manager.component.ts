@@ -1,15 +1,16 @@
-// src/app/components/enpi-manager/enpi-manager.component.ts
+// energymeteringapp.client/src/app/components/enpi-manager/enpi-manager.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { PlotlyModule } from 'angular-plotly.js';
 import { ApiService } from '../../services/api.service';
+import { ChartService } from '../../services/chart.service';
 
 @Component({
   selector: 'app-enpi-manager',
   templateUrl: './enpi-manager.component.html',
-  //styleUrls: ['./enpi-manager.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule, PlotlyModule]
 })
 export class EnPIManagerComponent implements OnInit {
   classifications: any[] = [];
@@ -27,7 +28,14 @@ export class EnPIManagerComponent implements OnInit {
     useBaseline: true
   };
 
-  constructor(private apiService: ApiService) { }
+  // Chart data
+  enpiChartData: any[] = [];
+  enpiChartLayout: any = {};
+
+  constructor(
+    private apiService: ApiService,
+    private chartService: ChartService
+  ) { }
 
   ngOnInit(): void {
     this.fetchClassifications();
@@ -58,6 +66,7 @@ export class EnPIManagerComponent implements OnInit {
     this.apiService.getEnPIs().subscribe({
       next: (response) => {
         this.enpiList = response;
+        this.updateEnPIChart();
       },
       error: (error) => {
         console.error('Error fetching EnPIs:', error);
@@ -140,5 +149,83 @@ export class EnPIManagerComponent implements OnInit {
   getClassificationName(id: number): string {
     const classification = this.classifications.find(c => c.id === id);
     return classification ? classification.name : 'Unknown';
+  }
+
+  updateEnPIChart(): void {
+    if (this.enpiList.length === 0) {
+      this.enpiChartData = [];
+      return;
+    }
+
+    // Group EnPIs by classification
+    const groupedEnpis: { [key: string]: any[] } = {};
+    this.enpiList.forEach(enpi => {
+      const classificationName = enpi.classification?.name || 'Unknown';
+      if (!groupedEnpis[classificationName]) {
+        groupedEnpis[classificationName] = [];
+      }
+      groupedEnpis[classificationName].push(enpi);
+    });
+
+    // Create chart data
+    this.enpiChartData = [];
+
+    // Bar chart for current values
+    const currentValues = {
+      x: this.enpiList.map(e => e.name),
+      y: this.enpiList.map(e => e.currentValue),
+      type: 'bar',
+      name: 'Current Value',
+      marker: { color: 'rgba(55, 128, 191, 0.7)' }
+    };
+
+    // Bar chart for baseline values
+    const baselineValues = {
+      x: this.enpiList.map(e => e.name),
+      y: this.enpiList.map(e => e.baselineValue),
+      type: 'bar',
+      name: 'Baseline Value',
+      marker: { color: 'rgba(219, 64, 82, 0.7)' }
+    };
+
+    // Add improvement percentage as a line
+    const improvements = {
+      x: this.enpiList.map(e => e.name),
+      y: this.enpiList.map(e => e.baselineValue > 0 ?
+        ((e.baselineValue - e.currentValue) / e.baselineValue * 100) : 0),
+      type: 'scatter',
+      mode: 'lines+markers',
+      name: 'Improvement %',
+      yaxis: 'y2',
+      marker: { color: 'rgba(50, 171, 96, 1)' }
+    };
+
+    this.enpiChartData = [currentValues, baselineValues, improvements];
+
+    this.enpiChartLayout = {
+      title: 'Energy Performance Indicators',
+      barmode: 'group',
+      xaxis: {
+        title: 'EnPI Name',
+        tickangle: -45
+      },
+      yaxis: {
+        title: 'Value'
+      },
+      yaxis2: {
+        title: 'Improvement %',
+        titlefont: { color: 'rgb(50, 171, 96)' },
+        tickfont: { color: 'rgb(50, 171, 96)' },
+        overlaying: 'y',
+        side: 'right',
+        showgrid: false,
+        range: [0, 100]
+      },
+      height: 500,
+      legend: {
+        orientation: 'h',
+        y: -0.2
+      }
+    };
   }
 }

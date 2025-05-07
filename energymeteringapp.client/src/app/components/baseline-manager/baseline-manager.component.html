@@ -1,0 +1,163 @@
+<!-- energymeteringapp.client/src/app/components/baseline-manager/baseline-manager.component.html -->
+<div>
+  <h2>Energy Baseline Management</h2>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{error}}
+    <button type="button" class="btn-close" (click)="error = null" aria-label="Close"></button>
+  </div>
+
+  <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
+    {{success}}
+    <button type="button" class="btn-close" (click)="success = null" aria-label="Close"></button>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Create New Baseline</h5>
+      <form (ngSubmit)="handleSubmit($event)">
+        <div class="row">
+          <div class="col-md-4">
+            <div class="mb-3">
+              <label for="classificationId" class="form-label">Classification</label>
+              <select class="form-select"
+                      id="classificationId"
+                      name="classificationId"
+                      [(ngModel)]="formData.classificationId"
+                      required>
+                <option *ngFor="let classification of classifications" [value]="classification.id">
+                  {{classification.name}} ({{classification.type}})
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="mb-3">
+              <label for="startDate" class="form-label">Start Date</label>
+              <input type="date"
+                     class="form-control"
+                     id="startDate"
+                     name="startDate"
+                     [(ngModel)]="formData.startDate"
+                     required />
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="mb-3">
+              <label for="endDate" class="form-label">End Date</label>
+              <input type="date"
+                     class="form-control"
+                     id="endDate"
+                     name="endDate"
+                     [(ngModel)]="formData.endDate"
+                     required />
+            </div>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label for="description" class="form-label">Description</label>
+          <input type="text"
+                 class="form-control"
+                 id="description"
+                 name="description"
+                 [(ngModel)]="formData.description"
+                 placeholder="Enter baseline description" />
+        </div>
+        <button type="submit" class="btn btn-primary" [disabled]="loading">
+          <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+          Create Baseline
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Baselines</h5>
+          <div *ngIf="loading && baselines.length === 0" class="text-center my-4">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <div *ngIf="!loading && baselines.length === 0" class="alert alert-info">
+            No baselines found. Create your first baseline using the form above.
+          </div>
+          <div *ngIf="baselines.length > 0" class="list-group">
+            <a *ngFor="let baseline of baselines"
+               href="javascript:void(0)"
+               class="list-group-item list-group-item-action"
+               [class.active]="selectedBaseline && selectedBaseline.id === baseline.id"
+               (click)="showBaselineData(baseline)">
+              <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">{{getClassificationName(baseline.classificationId)}}</h6>
+                <small>{{baseline.createdAt | date:'yyyy-MM-dd'}}</small>
+              </div>
+              <p class="mb-1">{{baseline.startDate | date:'yyyy-MM-dd'}} to {{baseline.endDate | date:'yyyy-MM-dd'}}</p>
+              <small>{{baseline.description}}</small>
+              <button *ngIf="selectedBaseline && selectedBaseline.id === baseline.id"
+                      class="btn btn-danger btn-sm float-end mt-2"
+                      (click)="handleDelete(baseline.id); $event.stopPropagation();"
+                      [disabled]="loading">
+                Delete
+              </button>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Baseline Data</h5>
+          <div *ngIf="loading && selectedBaseline" class="text-center my-4">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading baseline data...</p>
+          </div>
+          <div *ngIf="!selectedBaseline" class="alert alert-info">
+            Select a baseline from the list to view its data.
+          </div>
+          <div *ngIf="selectedBaseline && !loading && meteringData.length === 0" class="alert alert-warning">
+            No data available for the selected baseline period.
+          </div>
+          <div *ngIf="selectedBaseline && !loading && meteringData.length > 0" style="height: 500px;">
+            <plotly-plot [data]="baselineChartData"
+                         [layout]="baselineChartLayout"
+                         [config]="{responsive: true}">
+            </plotly-plot>
+          </div>
+          <div *ngIf="selectedBaseline && !loading && meteringData.length > 0" class="mt-3">
+            <h6>Baseline Summary</h6>
+            <table class="table table-sm table-bordered">
+              <tbody>
+                <tr>
+                  <th scope="row">Classification</th>
+                  <td>{{getClassificationName(selectedBaseline.classificationId)}}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Period</th>
+                  <td>{{selectedBaseline.startDate | date:'yyyy-MM-dd'}} to {{selectedBaseline.endDate | date:'yyyy-MM-dd'}}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Total Energy</th>
+                  <td>{{meteringData.reduce((sum, item) => sum + item.energyValue, 0).toFixed(2)}} kWh</td>
+                </tr>
+                <tr>
+                  <th scope="row">Max Power</th>
+                  <td>{{Math.max(...meteringData.map(item => item.power)).toFixed(2)}} kW</td>
+                </tr>
+                <tr>
+                  <th scope="row">Data Points</th>
+                  <td>{{meteringData.length}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

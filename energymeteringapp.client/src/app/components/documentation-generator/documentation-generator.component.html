@@ -1,0 +1,169 @@
+<!-- energymeteringapp.client/src/app/components/documentation-generator/documentation-generator.component.html -->
+<div>
+  <h2>ISO 50001 Documentation Generator</h2>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{error}}
+    <button type="button" class="btn-close" (click)="error = null" aria-label="Close"></button>
+  </div>
+
+  <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
+    {{success}}
+    <button type="button" class="btn-close" (click)="success = null" aria-label="Close"></button>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6" [class.d-none]="previewMode">
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Document Configuration</h5>
+          <form (ngSubmit)="generateDocument()">
+            <div class="mb-3">
+              <label for="documentType" class="form-label">Document Type</label>
+              <select class="form-select"
+                      id="documentType"
+                      name="documentType"
+                      [(ngModel)]="formData.documentType"
+                      (change)="onDocumentTypeChange()"
+                      required>
+                <option *ngFor="let docType of documentTypes" [value]="docType.id">
+                  {{docType.name}}
+                </option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="title" class="form-label">Document Title</label>
+              <input type="text"
+                     class="form-control"
+                     id="title"
+                     name="title"
+                     [(ngModel)]="formData.title"
+                     required />
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="startDate" class="form-label">Start Date</label>
+                  <input type="date"
+                         class="form-control"
+                         id="startDate"
+                         name="startDate"
+                         [(ngModel)]="formData.startDate"
+                         required />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="endDate" class="form-label">End Date</label>
+                  <input type="date"
+                         class="form-control"
+                         id="endDate"
+                         name="endDate"
+                         [(ngModel)]="formData.endDate"
+                         required />
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="format" class="form-label">Document Format</label>
+              <select class="form-select"
+                      id="format"
+                      name="format"
+                      [(ngModel)]="formData.format"
+                      required>
+                <option value="pdf">PDF</option>
+                <option value="docx">Word (DOCX)</option>
+                <option value="txt">Text (TXT)</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input"
+                       type="checkbox"
+                       id="includeCharts"
+                       name="includeCharts"
+                       [(ngModel)]="formData.includeCharts" />
+                <label class="form-check-label" for="includeCharts">
+                  Include Charts and Graphs
+                </label>
+              </div>
+            </div>
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input"
+                       type="checkbox"
+                       id="includeRawData"
+                       name="includeRawData"
+                       [(ngModel)]="formData.includeRawData" />
+                <label class="form-check-label" for="includeRawData">
+                  Include Raw Data Appendix
+                </label>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" [disabled]="loading">
+              <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              Generate Document
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Document Types</h5>
+          <div class="list-group">
+            <a *ngFor="let docType of documentTypes"
+               href="javascript:void(0)"
+               class="list-group-item list-group-item-action"
+               [class.active]="formData.documentType === docType.id"
+               (click)="formData.documentType = docType.id; onDocumentTypeChange()">
+              <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">{{docType.name}}</h6>
+              </div>
+              <p class="mb-1">
+                {{
+                  docType.id === 'energyPolicy' ? 'Establishes energy management commitments and framework' :
+                  docType.id === 'energyReview' ? 'Analysis of energy use, consumption, and opportunities' :
+                  docType.id === 'energyBaseline' ? 'Reference for comparing energy performance over time' :
+                  docType.id === 'enpiReport' ? 'Monitors energy performance indicators and trends' :
+                  docType.id === 'actionPlan' ? 'Specific actions to achieve energy objectives and targets' :
+                  'Assessment of compliance with ISO 50001 requirements'
+                }}
+              </p>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div [class.col-md-6]="!previewMode" [class.col-md-12]="previewMode">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title">Document Preview</h5>
+            <div>
+              <button *ngIf="previewMode" type="button" class="btn btn-secondary me-2" (click)="previewMode = false">
+                Back to Form
+              </button>
+              <button *ngIf="documentContent" type="button" class="btn btn-primary" (click)="downloadDocument()">
+                Download
+              </button>
+            </div>
+          </div>
+          <div *ngIf="loading" class="text-center my-4">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Generating document...</p>
+          </div>
+          <div *ngIf="!loading && !documentContent" class="alert alert-info">
+            No document generated yet. Configure and generate a document using the form.
+          </div>
+          <div *ngIf="!loading && documentContent" class="bg-light p-3 rounded" style="white-space: pre-wrap; max-height: 600px; overflow-y: auto; font-family: monospace;">
+            {{documentContent}}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

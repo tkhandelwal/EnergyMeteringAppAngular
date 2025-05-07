@@ -1,0 +1,265 @@
+<!-- energymeteringapp.client/src/app/components/iso50001-dashboard/iso50001-dashboard.component.html -->
+<div>
+  <h2>ISO 50001 Energy Management Dashboard</h2>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{error}}
+    <button type="button" class="btn-close" (click)="error = null" aria-label="Close"></button>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3 mb-3">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">Total Energy</h5>
+          <div class="display-6">{{summary.totalEnergy | number:'1.0-0'}}</div>
+          <div class="text-muted">kWh</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">Energy Savings</h5>
+          <div class="display-6">{{summary.totalSavings | number:'1.0-0'}}</div>
+          <div class="text-muted">kWh</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">Action Plans</h5>
+          <div class="display-6">{{summary.completedActionPlans}}/{{summary.actionPlansCount}}</div>
+          <div class="text-muted">Completed</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">Compliance Score</h5>
+          <div class="display-6">{{summary.complianceScore | number:'1.0-0'}}%</div>
+          <div class="text-muted">ISO 50001</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ISO 50001 Quick Access -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">ISO 50001 Management</h5>
+      <div class="row gx-3 gy-2">
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100" (click)="navigateTo('/baselines')">
+            Baseline Management
+          </button>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100" (click)="navigateTo('/enpi')">
+            EnPI Management
+          </button>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100" (click)="navigateTo('/targets')">
+            Target Management
+          </button>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100" (click)="navigateTo('/action-plans')">
+            Action Plans
+          </button>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100" (click)="navigateTo('/documentation')">
+            Documentation
+          </button>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100" (click)="navigateTo('/reports')">
+            Reports
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title">Energy Performance</h5>
+          <div *ngIf="loading" class="text-center py-5">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <div *ngIf="!loading && energySavingsChartData.length === 0" class="text-center py-5">
+            <p>No EnPI data available for comparison. Create EnPIs with baseline values first.</p>
+          </div>
+          <div *ngIf="!loading && energySavingsChartData.length > 0" style="height: 400px;">
+            <plotly-plot [data]="energySavingsChartData"
+                         [layout]="energySavingsChartLayout"
+                         [config]="{responsive: true}">
+            </plotly-plot>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title">Compliance Assessment</h5>
+          <div *ngIf="loading" class="text-center py-5">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <div *ngIf="!loading && complianceChartData.length > 0" style="height: 400px;">
+            <plotly-plot [data]="complianceChartData"
+                         [layout]="complianceChartLayout"
+                         [config]="{responsive: true}">
+            </plotly-plot>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">EnPI Trends</h5>
+      <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+      <div *ngIf="!loading && enpiTrendChartData.length > 0" style="height: 400px;">
+        <plotly-plot [data]="enpiTrendChartData"
+                     [layout]="enpiTrendChartLayout"
+                     [config]="{responsive: true}">
+        </plotly-plot>
+      </div>
+    </div>
+  </div>
+
+  <!-- ISO 50001 Status -->
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">ISO 50001 Implementation Status</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Requirement</th>
+              <th>Status</th>
+              <th>Last Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Energy Policy</td>
+              <td>
+                <span class="badge bg-success">Completed</span>
+              </td>
+              <td>2023-06-15</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" (click)="navigateTo('/documentation')">View</button>
+              </td>
+            </tr>
+            <tr>
+              <td>Energy Review</td>
+              <td>
+                <span class="badge bg-success">Completed</span>
+              </td>
+              <td>2023-07-20</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" (click)="navigateTo('/reports')">View</button>
+              </td>
+            </tr>
+            <tr>
+              <td>Energy Baseline</td>
+              <td>
+                <span class="badge" [ngClass]="baselines.length > 0 ? 'bg-success' : 'bg-warning'">
+                  {{baselines.length > 0 ? 'Completed' : 'In Progress'}}
+                </span>
+              </td>
+              <td>{{baselines.length > 0 ? '2023-08-05' : 'N/A'}}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" (click)="navigateTo('/baselines')">
+                  {{baselines.length > 0 ? 'View' : 'Create'}}
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>Energy Performance Indicators</td>
+              <td>
+                <span class="badge" [ngClass]="enpis.length > 0 ? 'bg-success' : 'bg-warning'">
+                  {{enpis.length > 0 ? 'Completed' : 'In Progress'}}
+                </span>
+              </td>
+              <td>{{enpis.length > 0 ? '2023-08-10' : 'N/A'}}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" (click)="navigateTo('/enpi')">
+                  {{enpis.length > 0 ? 'View' : 'Create'}}
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>Energy Objectives & Targets</td>
+              <td>
+                <span class="badge" [ngClass]="targets.length > 0 ? 'bg-success' : 'bg-warning'">
+                  {{targets.length > 0 ? 'Completed' : 'In Progress'}}
+                </span>
+              </td>
+              <td>{{targets.length > 0 ? '2023-08-15' : 'N/A'}}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" (click)="navigateTo('/targets')">
+                  {{targets.length > 0 ? 'View' : 'Create'}}
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>Action Plans</td>
+              <td>
+                <span class="badge" [ngClass]="actionPlans.length > 0 ? 'bg-success' : 'bg-warning'">
+                  {{actionPlans.length > 0 ? 'Completed' : 'In Progress'}}
+                </span>
+              </td>
+              <td>{{actionPlans.length > 0 ? '2023-08-20' : 'N/A'}}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" (click)="navigateTo('/action-plans')">
+                  {{actionPlans.length > 0 ? 'View' : 'Create'}}
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>Internal Audit</td>
+              <td>
+                <span class="badge bg-secondary">Planned</span>
+              </td>
+              <td>N/A</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" (click)="navigateTo('/documentation')">Create</button>
+              </td>
+            </tr>
+            <tr>
+              <td>Management Review</td>
+              <td>
+                <span class="badge bg-secondary">Planned</span>
+              </td>
+              <td>N/A</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" (click)="navigateTo('/documentation')">Create</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
