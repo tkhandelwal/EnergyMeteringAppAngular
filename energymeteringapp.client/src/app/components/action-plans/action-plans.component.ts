@@ -1,10 +1,10 @@
-// energymeteringapp.client/src/app/components/action-plans/action-plans.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { ChartService } from '../../services/chart.service';
 import { PlotlyModule } from 'angular-plotly.js';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-action-plans',
@@ -60,9 +60,9 @@ export class ActionPlansComponent implements OnInit {
   fetchClassifications(): void {
     this.apiService.getClassifications().subscribe({
       next: (data) => {
-        this.classifications = data;
-        if (data.length > 0) {
-          this.formData.classificationId = data[0].id;
+        this.classifications = data || [];
+        if (this.classifications.length > 0) {
+          this.formData.classificationId = this.classifications[0].id;
         }
       },
       error: (err) => {
@@ -76,7 +76,7 @@ export class ActionPlansComponent implements OnInit {
     this.loading = true;
     this.apiService.getActionPlans().subscribe({
       next: (data) => {
-        this.actionPlans = data;
+        this.actionPlans = data || [];
         this.updateCharts();
         this.loading = false;
       },
@@ -133,14 +133,14 @@ export class ActionPlansComponent implements OnInit {
     this.formData = {
       name: plan.name,
       classificationId: plan.classificationId.toString(),
-      description: plan.description,
+      description: plan.description || '',
       energySavingEstimate: plan.energySavingEstimate,
       costEstimate: plan.costEstimate,
       startDate: new Date(plan.startDate).toISOString().split('T')[0],
       endDate: new Date(plan.endDate).toISOString().split('T')[0],
       status: plan.status,
-      responsible: plan.responsible,
-      notes: plan.notes
+      responsible: plan.responsible || '',
+      notes: plan.notes || ''
     };
   }
 
@@ -184,6 +184,22 @@ export class ActionPlansComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  // Helper methods to move complex operations out of the template
+  getCompletedCount(): number {
+    if (!this.actionPlans || this.actionPlans.length === 0) return 0;
+    return this.actionPlans.filter(p => p.status === 'Completed').length;
+  }
+
+  getInProgressCount(): number {
+    if (!this.actionPlans || this.actionPlans.length === 0) return 0;
+    return this.actionPlans.filter(p => p.status === 'InProgress').length;
+  }
+
+  getTotalSavings(): number {
+    if (!this.actionPlans || this.actionPlans.length === 0) return 0;
+    return this.actionPlans.reduce((sum, p) => sum + (p.energySavingEstimate || 0), 0);
   }
 
   getStatusBadge(status: string): string {
@@ -239,7 +255,7 @@ export class ActionPlansComponent implements OnInit {
       'info': 'rgb(13, 202, 240)'
     };
 
-    const plotlyColors = colors.map(color => colorMap[color] || colorMap.secondary);
+    const plotlyColors = colors.map(color => colorMap[color] || colorMap['secondary']);
 
     // Energy savings by classification chart
     const savingsByClassification: { [key: string]: number } = {};
@@ -249,7 +265,7 @@ export class ActionPlansComponent implements OnInit {
       if (!savingsByClassification[className]) {
         savingsByClassification[className] = 0;
       }
-      savingsByClassification[className] += plan.energySavingEstimate;
+      savingsByClassification[className] += plan.energySavingEstimate || 0;
     });
 
     const classLabels = Object.keys(savingsByClassification);

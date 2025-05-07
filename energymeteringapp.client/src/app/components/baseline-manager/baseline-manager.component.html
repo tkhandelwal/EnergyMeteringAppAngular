@@ -1,4 +1,3 @@
-<!-- energymeteringapp.client/src/app/components/baseline-manager/baseline-manager.component.html -->
 <div>
   <h2>Energy Baseline Management</h2>
 
@@ -85,24 +84,25 @@
             No baselines found. Create your first baseline using the form above.
           </div>
           <div *ngIf="baselines.length > 0" class="list-group">
-            <a *ngFor="let baseline of baselines"
-               href="javascript:void(0)"
-               class="list-group-item list-group-item-action"
-               [class.active]="selectedBaseline && selectedBaseline.id === baseline.id"
-               (click)="showBaselineData(baseline)">
-              <div class="d-flex w-100 justify-content-between">
-                <h6 class="mb-1">{{getClassificationName(baseline.classificationId)}}</h6>
-                <small>{{baseline.createdAt | date:'yyyy-MM-dd'}}</small>
-              </div>
-              <p class="mb-1">{{baseline.startDate | date:'yyyy-MM-dd'}} to {{baseline.endDate | date:'yyyy-MM-dd'}}</p>
-              <small>{{baseline.description}}</small>
+            <div *ngFor="let baseline of baselines" class="position-relative">
+              <a href="javascript:void(0)"
+                 class="list-group-item list-group-item-action"
+                 [class.active]="selectedBaseline && selectedBaseline.id === baseline.id"
+                 (click)="showBaselineData(baseline)">
+                <div class="d-flex w-100 justify-content-between">
+                  <h6 class="mb-1">{{getClassificationName(baseline.classificationId)}}</h6>
+                  <small>{{baseline.createdAt | date:'yyyy-MM-dd'}}</small>
+                </div>
+                <p class="mb-1">{{baseline.startDate | date:'yyyy-MM-dd'}} to {{baseline.endDate | date:'yyyy-MM-dd'}}</p>
+                <small>{{baseline.description}}</small>
+              </a>
               <button *ngIf="selectedBaseline && selectedBaseline.id === baseline.id"
-                      class="btn btn-danger btn-sm float-end mt-2"
+                      class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2"
                       (click)="handleDelete(baseline.id); $event.stopPropagation();"
                       [disabled]="loading">
                 Delete
               </button>
-            </a>
+            </div>
           </div>
         </div>
       </div>
@@ -143,11 +143,11 @@
                 </tr>
                 <tr>
                   <th scope="row">Total Energy</th>
-                  <td>{{meteringData.reduce((sum, item) => sum + item.energyValue, 0).toFixed(2)}} kWh</td>
+                  <td>{{getTotalEnergy().toFixed(2)}} kWh</td>
                 </tr>
                 <tr>
                   <th scope="row">Max Power</th>
-                  <td>{{Math.max(...meteringData.map(item => item.power)).toFixed(2)}} kW</td>
+                  <td>{{getMaxPower().toFixed(2)}} kW</td>
                 </tr>
                 <tr>
                   <th scope="row">Data Points</th>

@@ -49,8 +49,8 @@ export class AdvancedAnalysisComponent implements OnInit {
 
     // Fetch classifications and metering data in parallel
     Promise.all([
-      this.apiService.getClassifications().toPromise(),
-      this.apiService.getMeteringData().toPromise()
+      firstValueFrom(this.apiService.getClassifications()),
+      firstValueFrom(this.apiService.getMeteringData())
     ]).then(([classifications, meteringData]) => {
       this.classifications = classifications || [];
       this.meteringData = meteringData || [];

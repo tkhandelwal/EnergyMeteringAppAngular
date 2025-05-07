@@ -6,6 +6,7 @@ import { PlotlyModule } from 'angular-plotly.js';
 import { ApiService } from '../../services/api.service';
 import { ChartService } from '../../services/chart.service';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-iso50001-dashboard',
@@ -52,17 +53,16 @@ export class Iso50001DashboardComponent implements OnInit {
     this.fetchData();
   }
 
-  // Continuing from where we left off
   fetchData(): void {
     this.loading = true;
 
     // Fetch all required data in parallel
     Promise.all([
-      this.apiService.getClassifications().toPromise(),
-      this.apiService.getEnPIs().toPromise(),
-      this.apiService.getBaselines().toPromise(),
-      this.apiService.getTargets().toPromise(),
-      this.apiService.getActionPlans().toPromise()
+      firstValueFrom(this.apiService.getClassifications()),
+      firstValueFrom(this.apiService.getEnPIs()),
+      firstValueFrom(this.apiService.getBaselines()),
+      firstValueFrom(this.apiService.getTargets()),
+      firstValueFrom(this.apiService.getActionPlans())
     ]).then(([classifications, enpis, baselines, targets, actionPlans]) => {
       this.classifications = classifications || [];
       this.enpis = enpis || [];

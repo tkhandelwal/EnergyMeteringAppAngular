@@ -75,14 +75,26 @@ namespace EnergyMeteringApp.Services
 
         private async Task<string> GenerateEnergyPolicyAsync()
         {
-            // In a real implementation, this would generate a proper document
-            return @"
+            // In a real implementation, this might load template data from a database
+            // or fetch policy content from another service
+            try
+            {
+                // Simulate async operation, e.g. loading from database
+                await Task.Delay(100);
+
+                return @"
 ENERGY POLICY
 
 Our organization is committed to improving energy performance through the implementation of an Energy Management System (EnMS) in compliance with ISO 50001.
 
 [Energy Policy content would go here]
 ";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating energy policy");
+                throw;
+            }
         }
 
         private async Task<string> GenerateEnergyReviewAsync(DateTime startDate, DateTime endDate)

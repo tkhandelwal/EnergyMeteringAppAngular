@@ -1,10 +1,10 @@
-// energymeteringapp.client/src/app/components/baseline-manager/baseline-manager.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PlotlyModule } from 'angular-plotly.js';
 import { ApiService } from '../../services/api.service';
 import { ChartService } from '../../services/chart.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-baseline-manager',
@@ -19,6 +19,7 @@ export class BaselineManagerComponent implements OnInit {
   loading = false;
   error: string | null = null;
   success: string | null = null;
+  Math = Math; // Make Math available to the template
 
   formData = {
     classificationId: '',
@@ -86,7 +87,7 @@ export class BaselineManagerComponent implements OnInit {
     };
 
     this.apiService.createBaseline(payload).subscribe({
-      next: (data) => {
+      next: () => {
         this.success = 'Baseline created successfully!';
         this.fetchBaselines();
         this.formData.description = 'Annual baseline';
@@ -105,6 +106,9 @@ export class BaselineManagerComponent implements OnInit {
       next: () => {
         this.success = 'Baseline deleted successfully!';
         this.fetchBaselines();
+        if (this.selectedBaseline && this.selectedBaseline.id === id) {
+          this.selectedBaseline = null;
+        }
       },
       error: (err) => {
         console.error('Error deleting baseline:', err);
@@ -204,7 +208,7 @@ export class BaselineManagerComponent implements OnInit {
 
     // Create chart layout
     this.baselineChartLayout = {
-      title: `Baseline Data for ${this.selectedBaseline.classification?.name || 'Selected Classification'}`,
+      title: `Baseline Data for ${this.getClassificationName(this.selectedBaseline.classificationId)}`,
       xaxis: {
         title: 'Date',
         tickangle: -45
@@ -230,5 +234,17 @@ export class BaselineManagerComponent implements OnInit {
   getClassificationName(id: number): string {
     const classification = this.classifications.find(c => c.id === id);
     return classification ? classification.name : 'Unknown';
+  }
+
+  // New method to calculate max power for the template
+  getMaxPower(): number {
+    if (!this.meteringData || this.meteringData.length === 0) return 0;
+    return Math.max(...this.meteringData.map(item => item.power));
+  }
+
+  // New method to calculate total energy for the template
+  getTotalEnergy(): number {
+    if (!this.meteringData || this.meteringData.length === 0) return 0;
+    return this.meteringData.reduce((sum, item) => sum + item.energyValue, 0);
   }
 }
