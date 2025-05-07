@@ -1,0 +1,69 @@
+<div>
+  <h2>System Status</h2>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{error}}
+    <button type="button" class="btn-close" (click)="error = null" aria-label="Close"></button>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">System Components</h5>
+      <div *ngIf="loading && statuses.backend.status === 'unknown'" class="text-center my-4">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Checking system status...</p>
+      </div>
+
+      <ul *ngIf="!(loading && statuses.backend.status === 'unknown')" class="list-group mb-3">
+        <li *ngFor="let item of statuses | keyvalue" class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong class="text-capitalize">{{item.key}}</strong>: {{item.value.message}}
+          </div>
+          <span class="badge bg-{{getStatusBadge(item.value.status)}}">
+            {{item.value.status | uppercase}}
+          </span>
+        </li>
+      </ul>
+
+      <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-primary"
+                (click)="checkBackend()"
+                [disabled]="loading">
+          {{loading ? 'Checking...' : 'Refresh Status'}}
+        </button>
+
+        <button class="btn btn-success"
+                (click)="createDefaultClassifications()"
+                [disabled]="loading || statuses.classifications.status === 'ok'">
+          Create Default Classifications
+        </button>
+
+        <button class="btn btn-info"
+                (click)="generateSampleData()"
+                [disabled]="loading || statuses.classifications.status !== 'ok'">
+          Generate Sample Data
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Troubleshooting</h5>
+      <p>If you're experiencing connection issues:</p>
+      <ol>
+        <li>Make sure the backend server is running (check console output)</li>
+        <li>Verify that the API endpoints are correctly configured</li>
+        <li>Check for CORS issues in the browser console</li>
+        <li>Try restarting both the frontend and backend servers</li>
+      </ol>
+      <p>
+        <strong>Backend URLs:</strong><br />
+        HTTPS: https://localhost:7217<br />
+        HTTP: http://localhost:5266
+      </p>
+    </div>
+  </div>
+</div>

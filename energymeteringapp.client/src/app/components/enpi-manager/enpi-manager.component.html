@@ -1,0 +1,194 @@
+<div>
+  <h2>Energy Performance Indicators (EnPI)</h2>
+
+  <div *ngIf="alert.show" class="alert alert-{{alert.variant}} alert-dismissible fade show" role="alert">
+    {{alert.message}}
+    <button type="button" class="btn-close" (click)="alert.show = false" aria-label="Close"></button>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Calculate New EnPI</h5>
+      <form (ngSubmit)="handleSubmit($event)">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="name" class="form-label">Indicator Name</label>
+              <input type="text"
+                     class="form-control"
+                     id="name"
+                     name="name"
+                     [(ngModel)]="formData.name"
+                     (change)="handleChange($event)"
+                     placeholder="e.g., Monthly Energy Consumption"
+                     required />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="formula" class="form-label">Formula Type</label>
+              <select class="form-select"
+                      id="formula"
+                      name="formula"
+                      [(ngModel)]="formData.formula"
+                      (change)="handleChange($event)"
+                      required>
+                <option value="TotalEnergy">Total Energy Consumption</option>
+                <option value="EnergyPerHour">Energy per Hour (Intensity)</option>
+                <option value="MaxPower">Maximum Power Demand</option>
+                <option value="AvgPower">Average Power Demand</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="classificationId" class="form-label">Classification</label>
+              <select class="form-select"
+                      id="classificationId"
+                      name="classificationId"
+                      [(ngModel)]="formData.classificationId"
+                      (change)="handleChange($event)"
+                      required>
+                <option *ngFor="let classification of classifications" [value]="classification.id">
+                  {{classification.name}} ({{classification.type}})
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="startDate" class="form-label">Current Period Start</label>
+              <input type="date"
+                     class="form-control"
+                     id="startDate"
+                     name="startDate"
+                     [(ngModel)]="formData.startDate"
+                     (change)="handleChange($event)"
+                     required />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="endDate" class="form-label">Current Period End</label>
+              <input type="date"
+                     class="form-control"
+                     id="endDate"
+                     name="endDate"
+                     [(ngModel)]="formData.endDate"
+                     (change)="handleChange($event)"
+                     required />
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3 form-check">
+          <input type="checkbox"
+                 class="form-check-input"
+                 id="useBaseline"
+                 name="useBaseline"
+                 [(ngModel)]="formData.useBaseline"
+                 (change)="handleChange($event)" />
+          <label class="form-check-label" for="useBaseline">Include Baseline Period for Comparison</label>
+        </div>
+
+        <div *ngIf="formData.useBaseline" class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="baselineStartDate" class="form-label">Baseline Period Start</label>
+              <input type="date"
+                     class="form-control"
+                     id="baselineStartDate"
+                     name="baselineStartDate"
+                     [(ngModel)]="formData.baselineStartDate"
+                     (change)="handleChange($event)"
+                     [required]="formData.useBaseline" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="baselineEndDate" class="form-label">Baseline Period End</label>
+              <input type="date"
+                     class="form-control"
+                     id="baselineEndDate"
+                     name="baselineEndDate"
+                     [(ngModel)]="formData.baselineEndDate"
+                     (change)="handleChange($event)"
+                     [required]="formData.useBaseline" />
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" [disabled]="loading">
+          <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+          {{loading ? 'Calculating...' : 'Calculate EnPI'}}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- EnPI visualization would go here, using ng-chartjs -->
+  <div *ngIf="enpiList.length > 0" class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">EnPI Visualization</h5>
+      <div style="height: 400px;">
+        <p>Charts will be shown here when rendered with chart.js</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">EnPI Records</h5>
+      <div *ngIf="enpiList.length === 0" class="alert alert-info">
+        No EnPI records found. Use the form above to calculate your first EnPI.
+      </div>
+
+      <div *ngIf="enpiList.length > 0" class="table-responsive">
+        <table class="table table-striped table-bordered">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Classification</th>
+              <th>Formula</th>
+              <th>Current Value</th>
+              <th>Baseline Value</th>
+              <th>Improvement</th>
+              <th>Calculation Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let enpi of enpiList">
+              <td>{{enpi.name}}</td>
+              <td>{{enpi.classification?.name || 'Unknown'}}</td>
+              <td>{{enpi.formula}}</td>
+              <td>{{enpi.currentValue.toFixed(2)}}</td>
+              <td>{{enpi.baselineValue.toFixed(2)}}</td>
+              <td>
+                {{
+enpi.baselineValue > 0 ?
+                  ((enpi.baselineValue - enpi.currentValue) / enpi.baselineValue * 100).toFixed(2) + '%' :
+                  'N/A'
+                }}
+              </td>
+              <td>{{enpi.calculationDate | date:'yyyy-MM-dd HH:mm'}}</td>
+              <td>
+                <button class="btn btn-danger btn-sm"
+                        (click)="handleDelete(enpi.id)"
+                        [disabled]="loading">
+                  {{loading ? '...' : 'Delete'}}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

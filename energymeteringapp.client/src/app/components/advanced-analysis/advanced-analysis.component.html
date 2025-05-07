@@ -1,0 +1,193 @@
+<div>
+  <h2>Advanced Energy Analysis</h2>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{error}}
+    <button type="button" class="btn-close" (click)="error = null" aria-label="Close"></button>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label for="startDate" class="form-label">Start Date</label>
+            <input type="date"
+                   class="form-control"
+                   id="startDate"
+                   name="startDate"
+                   [value]="analysisConfig.startDate"
+                   (change)="handleConfigChange($event)" />
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label for="endDate" class="form-label">End Date</label>
+            <input type="date"
+                   class="form-control"
+                   id="endDate"
+                   name="endDate"
+                   [value]="analysisConfig.endDate"
+                   (change)="handleConfigChange($event)" />
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label for="viewType" class="form-label">View Type</label>
+            <select class="form-select"
+                    id="viewType"
+                    name="viewType"
+                    [value]="analysisConfig.viewType"
+                    (change)="handleConfigChange($event)">
+              <option value="hourlyHeatmap">Hourly Heatmap</option>
+              <option value="weekdayComparison">Weekday Comparison</option>
+              <option value="consumptionTrend">Consumption Trend</option>
+              <option value="classificationComparison">Classification Comparison</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label for="comparisonType" class="form-label">Comparison</label>
+            <select class="form-select"
+                    id="comparisonType"
+                    name="comparisonType"
+                    [value]="analysisConfig.comparisonType"
+                    (change)="handleConfigChange($event)">
+              <option value="none">None</option>
+              <option value="previousPeriod">Previous Period</option>
+              <option value="yearOverYear">Year over Year</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <div class="mb-3">
+            <label for="classificationIds" class="form-label">Classifications (Hold Ctrl/Cmd to select multiple)</label>
+            <select class="form-select"
+                    id="classificationIds"
+                    name="classificationIds"
+                    multiple
+                    [value]="analysisConfig.classificationIds"
+                    (change)="handleConfigChange($event)"
+                    style="height: 100px">
+              <option *ngFor="let classification of classifications" [value]="classification.id">
+                {{classification.name}} ({{classification.type}})
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary"
+              (click)="performAnalysis()"
+              [disabled]="loading">
+        {{loading ? 'Loading...' : 'Update Analysis'}}
+      </button>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">
+        {{
+analysisConfig.viewType === 'hourlyHeatmap' ? 'Energy Usage by Hour and Day' :
+          analysisConfig.viewType === 'weekdayComparison' ? 'Average Energy Usage by Day of Week' :
+          analysisConfig.viewType === 'consumptionTrend' ? 'Energy Consumption Trend' :
+          'Energy Consumption by Classification'
+        }}
+      </h5>
+
+      <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && getFilteredData().length === 0" class="text-center py-3">
+        <p>No data available for the selected criteria.</p>
+      </div>
+
+      <div *ngIf="!loading && getFilteredData().length > 0" style="height: 500px;">
+        <canvas *ngIf="analysisData" baseChart
+                [type]="analysisConfig.viewType === 'hourlyHeatmap' ? 'scatter' :
+                 analysisConfig.viewType === 'consumptionTrend' ? 'line' : 'bar'"
+                [data]="analysisData"
+                [options]="chartOptions"></canvas>
+      </div>
+
+      <div class="mt-3 bg-light p-3 rounded">
+        <h6 class="mb-2">Analysis Insights</h6>
+        <p *ngIf="analysisConfig.viewType === 'hourlyHeatmap'">
+          This heatmap shows energy usage patterns throughout the day and week.
+          Darker colors indicate higher power demand. Use this to identify peak usage times and
+          opportunities for load shifting or energy conservation.
+        </p>
+        <p *ngIf="analysisConfig.viewType === 'weekdayComparison'">
+          This chart compares average energy consumption across different days of the week.
+          Use this to identify weekly patterns and potential anomalies in usage behavior.
+        </p>
+        <p *ngIf="analysisConfig.viewType === 'consumptionTrend'">
+          This trend analysis shows energy consumption and average power demand over time.
+          Use this to identify long-term trends, seasonal patterns, and progress toward energy
+          reduction goals.
+        </p>
+        <p *ngIf="analysisConfig.viewType === 'classificationComparison'">
+          This comparison shows energy consumption and average power demand across different
+          classifications. Use this to identify the most energy-intensive areas and prioritize
+          energy efficiency investments.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Advanced Analysis Options</h5>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Analytics Methods</label>
+            <div class="list-group">
+              <button type="button" class="list-group-item list-group-item-action" disabled>
+                <strong>Pattern Recognition</strong>: Identify recurring energy usage patterns
+              </button>
+              <button type="button" class="list-group-item list-group-item-action" disabled>
+                <strong>Anomaly Detection</strong>: Identify unusual energy consumption events
+              </button>
+              <button type="button" class="list-group-item list-group-item-action" disabled>
+                <strong>Energy Forecasting</strong>: Predict future energy consumption
+              </button>
+              <button type="button" class="list-group-item list-group-item-action" disabled>
+                <strong>Regression Analysis</strong>: Analyze relationships between variables
+              </button>
+            </div>
+            <small class="text-muted mt-1">* Additional analytics features coming soon</small>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Additional Dimensions</label>
+            <div class="list-group">
+              <button type="button" class="list-group-item list-group-item-action" disabled>
+                <strong>Weather Data</strong>: Correlate energy usage with weather conditions
+              </button>
+              <button type="button" class="list-group-item list-group-item-action" disabled>
+                <strong>Occupancy Data</strong>: Analyze energy usage vs. building occupancy
+              </button>
+              <button type="button" class="list-group-item list-group-item-action" disabled>
+                <strong>Production Data</strong>: Correlate energy with production levels
+              </button>
+              <button type="button" class="list-group-item list-group-item-action" disabled>
+                <strong>Cost Analysis</strong>: Analyze energy costs with time-of-use rates
+              </button>
+            </div>
+            <small class="text-muted mt-1">* Additional data dimensions coming soon</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,141 @@
+<div>
+  <h2>Pareto Analysis</h2>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{error}}
+    <button type="button" class="btn-close" (click)="error = null" aria-label="Close"></button>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label for="startDate" class="form-label">Start Date</label>
+            <input type="date"
+                   class="form-control"
+                   id="startDate"
+                   name="startDate"
+                   [value]="formConfig.startDate"
+                   (change)="handleConfigChange($event)" />
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label for="endDate" class="form-label">End Date</label>
+            <input type="date"
+                   class="form-control"
+                   id="endDate"
+                   name="endDate"
+                   [value]="formConfig.endDate"
+                   (change)="handleConfigChange($event)" />
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label for="groupBy" class="form-label">Group By</label>
+            <select class="form-select"
+                    id="groupBy"
+                    name="groupBy"
+                    [value]="formConfig.groupBy"
+                    (change)="handleConfigChange($event)">
+              <option value="classification">Classification</option>
+              <option value="dayOfWeek">Day of Week</option>
+              <option value="hourOfDay">Hour of Day</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label for="metricType" class="form-label">Metric</label>
+            <select class="form-select"
+                    id="metricType"
+                    name="metricType"
+                    [value]="formConfig.metricType"
+                    (change)="handleConfigChange($event)">
+              <option value="energy">Energy (kWh)</option>
+              <option value="power">Power (kW)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <h4>Pareto Chart</h4>
+      <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && paretoData.length === 0" class="text-center py-3">
+        <p>No data available for the selected criteria.</p>
+      </div>
+
+      <div *ngIf="!loading && paretoData.length > 0" style="height: 500px;">
+        <canvas *ngIf="chartData" baseChart
+                [type]="'bar'"
+                [data]="chartData"
+                [options]="chartOptions"></canvas>
+
+        <div class="text-center mt-3 text-muted">
+          <small>
+            This chart shows that a small number of
+            {{
+formConfig.groupBy === 'classification' ? 'classifications' :
+              formConfig.groupBy === 'dayOfWeek' ? 'days' : 'hours'
+            }}
+            account for the majority of
+            {{formConfig.metricType === 'energy' ? 'energy consumption' : 'power demand'}}
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h4>Pareto Analysis Table</h4>
+      <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && paretoData.length === 0" class="text-center py-3">
+        <p>No data available for the selected criteria.</p>
+      </div>
+
+      <div *ngIf="!loading && paretoData.length > 0" class="table-responsive">
+        <table class="table table-striped table-bordered hover">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>
+                {{
+                formConfig.groupBy === 'classification' ? 'Classification' :
+                formConfig.groupBy === 'dayOfWeek' ? 'Day of Week' : 'Hour of Day'
+                }}
+              </th>
+              <th>{{formConfig.metricType === 'energy' ? 'Energy (kWh)' : 'Power (kW)'}}</th>
+              <th>% of Total</th>
+              <th>Cumulative %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of paretoData; let i = index">
+              <td>{{i + 1}}</td>
+              <td>{{item.label}}</td>
+              <td>{{item.value}}</td>
+              <td>{{item.percentOfTotal}}%</td>
+              <td>{{item.cumulativePercent}}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

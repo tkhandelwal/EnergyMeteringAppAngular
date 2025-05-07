@@ -1,0 +1,238 @@
+<div>
+  <h2>Energy Reports</h2>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{error}}
+    <button type="button" class="btn-close" (click)="error = null" aria-label="Close"></button>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Report Configuration</h5>
+      <form>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="startDate" class="form-label">Start Date</label>
+              <input type="date"
+                     class="form-control"
+                     id="startDate"
+                     name="startDate"
+                     [value]="reportConfig.startDate"
+                     (change)="handleChange($event)" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="endDate" class="form-label">End Date</label>
+              <input type="date"
+                     class="form-control"
+                     id="endDate"
+                     name="endDate"
+                     [value]="reportConfig.endDate"
+                     (change)="handleChange($event)" />
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="classificationIds" class="form-label">Classifications (Hold Ctrl/Cmd to select multiple)</label>
+              <select class="form-select"
+                      id="classificationIds"
+                      name="classificationIds"
+                      multiple
+                      [value]="reportConfig.classificationIds"
+                      (change)="handleChange($event)"
+                      style="height: 150px">
+                <option *ngFor="let classification of classifications" [value]="classification.id">
+                  {{classification.name}} ({{classification.type}})
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="reportType" class="form-label">Report Type</label>
+              <select class="form-select"
+                      id="reportType"
+                      name="reportType"
+                      [value]="reportConfig.reportType"
+                      (change)="handleChange($event)">
+                <option value="energyFlow">Energy Flow Sankey</option>
+                <option value="pareto">Pareto Analysis</option>
+                <option value="enpi">Energy Performance Indicators</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Report Visualization -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">
+        {{
+reportConfig.reportType === 'energyFlow' ? 'Energy Flow Sankey Diagram' :
+          reportConfig.reportType === 'pareto' ? 'Pareto Analysis of Energy Consumption' :
+          'Energy Performance Indicators'
+        }}
+      </h5>
+
+      <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && getFilteredData().length === 0" class="text-center py-3">
+        <p>No data available for the selected criteria. Please adjust your filters or generate data.</p>
+      </div>
+
+      <!-- Energy Flow Sankey Report -->
+      <div *ngIf="!loading && reportConfig.reportType === 'energyFlow' && sankeyData" style="height: 500px;">
+        <p class="text-center">
+          Sankey diagram visualization would appear here.<br>
+          (Implementation requires a specific Sankey diagram library)
+        </p>
+      </div>
+
+      <!-- Pareto Analysis Report -->
+      <div *ngIf="!loading && reportConfig.reportType === 'pareto' && paretoData" style="height: 500px;">
+        <div style="height: 400px;">
+          <canvas baseChart
+                  [type]="'bar'"
+                  [data]="{
+                  labels: paretoData.map(item=>
+            item.name),
+            datasets: [
+            {
+            label: 'Energy Consumption (kWh)',
+            data: paretoData.map(item => item.value),
+            backgroundColor: 'rgba(55, 128, 191, 0.7)'
+            },
+            {
+            label: 'Cumulative %',
+            data: paretoData.map(item => item.cumulativePercentage),
+            type: 'line',
+            yAxisID: 'y1',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)'
+            }
+            ]
+            }"
+            [options]="{
+            responsive: true,
+            scales: {
+            y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+            display: true,
+            text: 'Energy Consumption (kWh)'
+            }
+            },
+            y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            grid: {
+            drawOnChartArea: false
+            },
+            title: {
+            display: true,
+            text: 'Cumulative Percentage (%)'
+            },
+            min: 0,
+            max: 100
+            }
+            }
+            }"
+            >
+          </canvas>
+        </div>
+      </div>
+
+      <!-- EnPI Report -->
+      <div *ngIf="!loading && reportConfig.reportType === 'enpi' && enpiData" style="height: 500px;">
+        <div style="height: 400px;">
+          <canvas baseChart
+                  [type]="'bar'"
+                  [data]="{
+                  labels: enpiData.map(item=>
+            item.name),
+            datasets: [
+            {
+            label: 'Energy Intensity (kWh/hour)',
+            data: enpiData.map(item => item.energyPerHour),
+            backgroundColor: 'rgba(55, 128, 191, 0.7)'
+            },
+            {
+            label: 'Max Power (kW)',
+            data: enpiData.map(item => item.maxPower),
+            backgroundColor: 'rgba(255, 99, 132, 0.7)'
+            }
+            ]
+            }"
+            [options]="{
+            responsive: true,
+            scales: {
+            y: {
+            beginAtZero: true,
+            title: {
+            display: true,
+            text: 'Value'
+            }
+            },
+            x: {
+            ticks: {
+            autoSkip: false,
+            maxRotation: 45,
+            minRotation: 45
+            }
+            }
+            }
+            }"
+            >
+          </canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Data Table</h5>
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead>
+            <tr>
+              <th>Classification</th>
+              <th>Type</th>
+              <th>Total Energy (kWh)</th>
+              <th>Max Power (kW)</th>
+              <th>Avg Power (kW)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of tableData">
+              <td>{{item.name}}</td>
+              <td>{{item.type}}</td>
+              <td>{{item.totalEnergy}}</td>
+              <td>{{item.maxPower}}</td>
+              <td>{{item.avgPower}}</td>
+            </tr>
+            <tr *ngIf="tableData.length === 0">
+              <td colspan="5" class="text-center">No data available for the selected criteria.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

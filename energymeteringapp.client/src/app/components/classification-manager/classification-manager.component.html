@@ -1,0 +1,132 @@
+<div>
+  <h2>Classification Manager</h2>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{error}}
+    <button type="button" class="btn-close" (click)="error = null" aria-label="Close"></button>
+  </div>
+
+  <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
+    {{success}}
+    <button type="button" class="btn-close" (click)="success = null" aria-label="Close"></button>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col">
+      <button class="btn btn-primary me-2"
+              (click)="createDefaultClassifications()"
+              [disabled]="loading">
+        <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+        {{loading ? 'Loading...' : 'Create Default Classifications'}}
+      </button>
+      <button class="btn btn-outline-secondary"
+              (click)="fetchClassifications()"
+              [disabled]="loading">
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Add New Classification</h5>
+      <form (ngSubmit)="handleSubmit()">
+        <div class="mb-3">
+          <label for="name" class="form-label">Name</label>
+          <input type="text"
+                 class="form-control"
+                 id="name"
+                 name="name"
+                 [(ngModel)]="formData.name"
+                 required
+                 placeholder="Enter classification name">
+        </div>
+        <div class="mb-3">
+          <label for="type" class="form-label">Type</label>
+          <select class="form-select"
+                  id="type"
+                  name="type"
+                  [(ngModel)]="formData.type"
+                  required>
+            <option value="Equipment">Equipment</option>
+            <option value="Facility">Facility</option>
+            <option value="ProductionLine">Production Line</option>
+            <option value="Organization">Organization</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="energyType" class="form-label">Energy Type</label>
+          <select class="form-select"
+                  id="energyType"
+                  name="energyType"
+                  [(ngModel)]="formData.energyType"
+                  required>
+            <option value="Electricity">Electricity</option>
+            <option value="Gas">Natural Gas</option>
+            <option value="Water">Water</option>
+            <option value="Steam">Steam</option>
+            <option value="Compressed Air">Compressed Air</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="measurementUnit" class="form-label">Measurement Unit</label>
+          <select class="form-select"
+                  id="measurementUnit"
+                  name="measurementUnit"
+                  [(ngModel)]="formData.measurementUnit"
+                  required>
+            <option value="kWh">kWh (Electricity)</option>
+            <option value="m³">m³ (Natural Gas/Water)</option>
+            <option value="kg">kg (Steam)</option>
+            <option value="L">Liters</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" [disabled]="loading">
+          <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+          {{loading ? 'Saving...' : 'Add Classification'}}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <h3>Classifications</h3>
+  <div *ngIf="loading && classifications.length === 0" class="text-center my-5">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2">Loading classifications...</p>
+  </div>
+
+  <div *ngIf="!loading && classifications.length === 0" class="alert alert-info">
+    No classifications found. Create some using the form above or click "Create Default Classifications".
+  </div>
+
+  <table *ngIf="classifications.length > 0" class="table table-striped table-bordered table-hover">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Energy Type</th>
+        <th>Unit</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let classification of classifications">
+        <td>{{classification.id}}</td>
+        <td>{{classification.name}}</td>
+        <td>{{classification.type}}</td>
+        <td>{{classification.energyType}}</td>
+        <td>{{classification.measurementUnit}}</td>
+        <td>
+          <button class="btn btn-danger btn-sm"
+                  (click)="handleDelete(classification.id)"
+                  [disabled]="loading">
+            Delete
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

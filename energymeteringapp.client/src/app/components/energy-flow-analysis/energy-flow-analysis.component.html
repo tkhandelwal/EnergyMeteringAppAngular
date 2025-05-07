@@ -1,0 +1,107 @@
+<div>
+  <h2>Energy Flow Analysis</h2>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{error}}
+    <button type="button" class="btn-close" (click)="error = null" aria-label="Close"></button>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="startDate" class="form-label">Start Date</label>
+            <input type="date"
+                   class="form-control"
+                   id="startDate"
+                   name="startDate"
+                   [value]="dateRange.startDate"
+                   (change)="handleDateChange($event)" />
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="endDate" class="form-label">End Date</label>
+            <input type="date"
+                   class="form-control"
+                   id="endDate"
+                   name="endDate"
+                   [value]="dateRange.endDate"
+                   (change)="handleDateChange($event)" />
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="view" class="form-label">Visualization Type</label>
+            <select class="form-select"
+                    id="view"
+                    name="view"
+                    [value]="view"
+                    (change)="handleViewChange($event)">
+              <option value="sankey">Sankey Diagram</option>
+              <option value="treemap">Treemap</option>
+              <option value="heatmap">Usage Pattern Heatmap</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && getFilteredData().length === 0" class="text-center py-3">
+        <p>No data available for the selected date range. Please generate data or adjust your selection.</p>
+      </div>
+
+      <!-- Sankey Diagram View -->
+      <div *ngIf="!loading && view === 'sankey' && sankeyData && getFilteredData().length > 0" style="height: 600px;">
+        <p class="text-center">
+          Sankey diagram visualization would appear here.<br>
+          (Implementation requires a specific Sankey diagram library)
+        </p>
+        <div class="text-center text-muted">
+          <small>
+            The Sankey diagram shows energy flow from overall facility through classification types to individual assets.
+            Line width represents energy consumption magnitude.
+          </small>
+        </div>
+      </div>
+
+      <!-- Treemap View -->
+      <div *ngIf="!loading && view === 'treemap' && treemapData && getFilteredData().length > 0" style="height: 600px;">
+        <p class="text-center">
+          Treemap visualization would appear here.<br>
+          (Implementation requires a specific Treemap library)
+        </p>
+        <div class="text-center text-muted">
+          <small>
+            The Treemap shows hierarchical energy consumption distribution with rectangle size representing energy magnitude.
+            Colors differentiate classification types.
+          </small>
+        </div>
+      </div>
+
+      <!-- Heatmap View -->
+      <div *ngIf="!loading && view === 'heatmap' && heatmapData && getFilteredData().length > 0" style="height: 500px;">
+        <p class="text-center">
+          Heatmap visualization would appear here.<br>
+          (Implementation requires a specific Heatmap library)
+        </p>
+        <div class="text-center text-muted">
+          <small>
+            The heatmap displays energy usage patterns by hour of day (x-axis) vs day of week (y-axis).
+            Color intensity represents average power demand.
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
