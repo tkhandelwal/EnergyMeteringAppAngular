@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
-import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-equipment',
@@ -135,11 +134,11 @@ export class EquipmentComponent implements OnInit {
     return statusObj ? statusObj.color : 'bg-secondary';
   }
 
-  addClassification(classificationId: number): void {
-    if (!this.selectedEquipment) return;
+  addClassificationToEquipment(equipmentId: number, classificationId: string): void {
+    if (!classificationId) return;
 
     this.loading = true;
-    this.apiService.addClassificationToEquipment(this.selectedEquipment.id, classificationId).subscribe({
+    this.apiService.addClassificationToEquipment(equipmentId, parseInt(classificationId)).subscribe({
       next: () => {
         this.success = 'Classification added successfully!';
         this.fetchEquipment();
@@ -152,11 +151,9 @@ export class EquipmentComponent implements OnInit {
     });
   }
 
-  removeClassification(classificationId: number): void {
-    if (!this.selectedEquipment) return;
-
+  removeClassificationFromEquipment(equipmentId: number, classificationId: number): void {
     this.loading = true;
-    this.apiService.removeClassificationFromEquipment(this.selectedEquipment.id, classificationId).subscribe({
+    this.apiService.removeClassificationFromEquipment(equipmentId, classificationId).subscribe({
       next: () => {
         this.success = 'Classification removed successfully!';
         this.fetchEquipment();
@@ -169,15 +166,8 @@ export class EquipmentComponent implements OnInit {
     });
   }
 
-  getEquipmentClassifications(equipment: any): any[] {
-    if (!equipment || !equipment.equipmentClassifications) return [];
-    return equipment.equipmentClassifications.map((ec: any) => ec.classification);
-  }
-
   isClassificationAssigned(classificationId: number): boolean {
-    if (!this.selectedEquipment || !this.selectedEquipment.equipmentClassifications) return false;
-    return this.selectedEquipment.equipmentClassifications.some(
-      (ec: any) => ec.classificationId === classificationId
-    );
+    if (!this.selectedEquipment || !this.selectedEquipment.classifications) return false;
+    return this.selectedEquipment.classifications.some((c: any) => c.id === classificationId);
   }
 }

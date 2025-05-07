@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 /energymeteringapp.client/package-lock.json
 /EnergyMeteringApp.Server/EnergyMetering.db-shm
+/EnergyMeteringApp.Server/EnergyMetering.db
+/EnergyMeteringApp.Server/EnergyMetering.db-wal

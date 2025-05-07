@@ -1,4 +1,3 @@
-// energymeteringapp.client/src/app/app-routing.module.ts
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
@@ -11,8 +10,9 @@ import { SystemStatusComponent } from './components/system-status/system-status.
 import { EnergyFlowAnalysisComponent } from './components/energy-flow-analysis/energy-flow-analysis.component';
 import { ParetoAnalysisComponent } from './components/pareto-analysis/pareto-analysis.component';
 import { AdvancedAnalysisComponent } from './components/advanced-analysis/advanced-analysis.component';
+import { EquipmentComponent } from './components/equipment/equipment.component'; // Add this line
 
-// Import new ISO 50001 components
+// Import ISO 50001 components
 import { Iso50001DashboardComponent } from './components/iso50001-dashboard/iso50001-dashboard.component';
 import { BaselineManagerComponent } from './components/baseline-manager/baseline-manager.component';
 import { TargetsManagerComponent } from './components/targets-manager/targets-manager.component';

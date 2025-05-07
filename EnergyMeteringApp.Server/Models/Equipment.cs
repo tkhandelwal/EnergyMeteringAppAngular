@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace EnergyMeteringApp.Models
 {
@@ -24,6 +25,10 @@ namespace EnergyMeteringApp.Models
 
         // Navigation properties
         public ICollection<EquipmentClassification> EquipmentClassifications { get; set; } = new List<EquipmentClassification>();
+
+        // Direct navigation property to Classifications (this is the key addition)
+        [JsonIgnore]
+        public List<Classification> Classifications { get; set; } = new List<Classification>();
 
         public ICollection<MeteringData> MeteringData { get; set; } = new List<MeteringData>();
     }

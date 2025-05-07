@@ -79,6 +79,19 @@ namespace EnergyMeteringApp.Data
                 .WithMany(c => c.EquipmentClassifications)
                 .HasForeignKey(ec => ec.ClassificationId);
 
+            // Add configuration for the direct navigation properties
+            modelBuilder.Entity<Equipment>()
+                .HasMany(e => e.Classifications)
+                .WithMany(c => c.Equipment)
+                .UsingEntity<EquipmentClassification>(
+                    j => j.HasOne(ec => ec.Classification)
+                          .WithMany(c => c.EquipmentClassifications)
+                          .HasForeignKey(ec => ec.ClassificationId),
+                    j => j.HasOne(ec => ec.Equipment)
+                          .WithMany(e => e.EquipmentClassifications)
+                          .HasForeignKey(ec => ec.EquipmentId)
+                );
+
             // Add relationship between Equipment and MeteringData
             modelBuilder.Entity<MeteringData>()
                 .HasOne(m => m.Equipment)

@@ -94,9 +94,7 @@
                (click)="selectedEquipment = item">
               <div class="d-flex w-100 justify-content-between">
                 <h6 class="mb-1">{{item.name}}</h6>
-                <span class="badge bg-{{item.status === 'Active' ? 'success' :
-                                        item.status === 'Maintenance' ? 'warning' :
-                                        item.status === 'Inactive' ? 'secondary' : 'danger'}}">
+                <span class="badge" [ngClass]="getStatusBadge(item.status)">
                   {{item.status}}
                 </span>
               </div>
@@ -120,9 +118,7 @@
           </div>
           <div class="mb-3">
             <h6>{{selectedEquipment.name}}</h6>
-            <span class="badge bg-{{selectedEquipment.status === 'Active' ? 'success' :
-                                     selectedEquipment.status === 'Maintenance' ? 'warning' :
-                                     selectedEquipment.status === 'Inactive' ? 'secondary' : 'danger'}}">
+            <span class="badge" [ngClass]="getStatusBadge(selectedEquipment.status)">
               {{selectedEquipment.status}}
             </span>
           </div>
@@ -145,14 +141,15 @@
             </div>
             <div *ngIf="selectedEquipment.classifications && selectedEquipment.classifications.length > 0"
                  class="mb-2">
-              <span *ngFor="let classification of selectedEquipment.classifications"
-                    class="badge bg-primary me-1 mb-1 p-2">
-                {{classification.name}}
-                <button class="btn-close btn-close-white ms-1"
-                        style="font-size: 0.5rem;"
-                        (click)="removeClassificationFromEquipment(selectedEquipment.id, classification.id)">
-                </button>
-              </span>
+              <ng-container *ngFor="let classification of selectedEquipment.classifications">
+                <span class="badge bg-primary me-1 mb-1 p-2">
+                  {{classification.name}}
+                  <button class="btn-close btn-close-white ms-1"
+                          style="font-size: 0.5rem;"
+                          (click)="removeClassificationFromEquipment(selectedEquipment.id, classification.id)">
+                  </button>
+                </span>
+              </ng-container>
             </div>
           </div>
 
@@ -164,9 +161,7 @@
                 <option value="" disabled selected>Select Classification</option>
                 <option *ngFor="let classification of classifications"
                         [value]="classification.id"
-                        [disabled]="selectedEquipment.classifications &&
-                        selectedEquipment.classifications.some(c=>
-                  c.id === classification.id)">
+                        [disabled]="isClassificationAssigned(classification.id)">
                   {{classification.name}}
                 </option>
               </select>

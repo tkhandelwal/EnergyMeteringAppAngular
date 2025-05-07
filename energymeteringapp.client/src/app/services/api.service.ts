@@ -15,7 +15,10 @@ export class ApiService {
   // Equipment
   getEquipment(): Observable<any[]> {
     return this.http.get<any[]>('/api/equipment')
-      .pipe(catchError(error => this.handleError(error)));
+      .pipe(catchError(error => {
+        console.error('Error in getEquipment:', error);
+        return throwError(() => new Error('Failed to load equipment'));
+      }));
   }
 
   getEquipmentById(id: number): Observable<any> {
@@ -40,12 +43,12 @@ export class ApiService {
 
   // Equipment-Classification relationships
   addClassificationToEquipment(equipmentId: number, classificationId: number): Observable<any> {
-    return this.http.post(`/api/equipment/${equipmentId}/classifications/${classificationId}`, {})
+    return this.http.post(`/api/equipment/${equipmentId}/AddClassification/${classificationId}`, {})
       .pipe(catchError(error => this.handleError(error)));
   }
 
   removeClassificationFromEquipment(equipmentId: number, classificationId: number): Observable<any> {
-    return this.http.delete(`/api/equipment/${equipmentId}/classifications/${classificationId}`)
+    return this.http.delete(`/api/equipment/${equipmentId}/RemoveClassification/${classificationId}`)
       .pipe(catchError(error => this.handleError(error)));
   }
 
