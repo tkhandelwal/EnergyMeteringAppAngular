@@ -1,4 +1,5 @@
-﻿using EnergyMeteringApp.Data;
+﻿// ClassificationsController.cs
+using EnergyMeteringApp.Data;
 using EnergyMeteringApp.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -40,10 +41,89 @@ namespace EnergyMeteringApp.Controllers
             return classification;
         }
 
+        // GET: api/Classifications/Hierarchy
+        [HttpGet("Hierarchy")]
+        public async Task<ActionResult<IEnumerable<object>>> GetClassificationHierarchy()
+        {
+            // Get top-level classifications (Organization level)
+            var topLevelClassifications = await _context.Classifications
+                .Where(c => c.ParentId == null)
+                .ToListAsync();
+
+            // Build hierarchical structure
+            var hierarchy = new List<object>();
+
+            foreach (var topLevel in topLevelClassifications)
+            {
+                hierarchy.Add(await BuildClassificationHierarchy(topLevel));
+            }
+
+            return hierarchy;
+        }
+
+        private async Task<object> BuildClassificationHierarchy(Classification classification)
+        {
+            // Get children
+            var children = await _context.Classifications
+                .Where(c => c.ParentId == classification.Id)
+                .ToListAsync();
+
+            var childrenObjects = new List<object>();
+
+            foreach (var child in children)
+            {
+                childrenObjects.Add(await BuildClassificationHierarchy(child));
+            }
+
+            // Get equipment for this classification
+            var equipment = await _context.Equipment
+                .Include(e => e.Classifications)
+                .Where(e => e.Classifications.Any(c => c.Id == classification.Id))
+                .ToListAsync();
+
+            var equipmentObjects = equipment.Select(e => new
+            {
+                id = e.Id,
+                name = e.Name,
+                type = "Equipment",
+                status = e.Status
+            }).ToList();
+
+            return new
+            {
+                id = classification.Id,
+                name = classification.Name,
+                type = classification.Type,
+                level = classification.Level,
+                children = childrenObjects,
+                equipment = equipmentObjects
+            };
+        }
+
         // POST: api/Classifications
         [HttpPost]
         public async Task<ActionResult<Classification>> CreateClassification(Classification classification)
         {
+            _context.Classifications.Add(classification);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetClassification), new { id = classification.Id }, classification);
+        }
+
+        // POST: api/Classifications/WithParent
+        [HttpPost("WithParent")]
+        public async Task<ActionResult<Classification>> CreateClassificationWithParent(Classification classification)
+        {
+            // If parent is specified, validate it exists
+            if (classification.ParentId.HasValue)
+            {
+                var parentExists = await _context.Classifications.AnyAsync(c => c.Id == classification.ParentId);
+                if (!parentExists)
+                {
+                    return BadRequest("Parent classification not found");
+                }
+            }
+
             _context.Classifications.Add(classification);
             await _context.SaveChangesAsync();
 

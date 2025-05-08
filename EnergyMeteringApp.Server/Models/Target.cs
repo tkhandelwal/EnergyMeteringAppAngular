@@ -1,4 +1,5 @@
-﻿using System;
+﻿// Target.cs
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace EnergyMeteringApp.Models
@@ -11,6 +12,10 @@ namespace EnergyMeteringApp.Models
         public int EnPIDefinitionId { get; set; }
 
         public EnPIDefinition EnPIDefinition { get; set; } = null!;
+
+        // Add equipment reference (nullable to support both types of targets)
+        public int? EquipmentId { get; set; }
+        public Equipment? Equipment { get; set; }
 
         [Required]
         public double TargetValue { get; set; }

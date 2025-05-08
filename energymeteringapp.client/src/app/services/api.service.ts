@@ -1,4 +1,4 @@
-// energymeteringapp.client/src/app/services/api.service.ts
+// api.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
@@ -9,8 +9,6 @@ import { catchError } from 'rxjs/operators';
 })
 export class ApiService {
   constructor(private http: HttpClient) { }
-
-  // Add these methods to the existing ApiService
 
   // Equipment
   getEquipment(): Observable<any[]> {
@@ -93,6 +91,17 @@ export class ApiService {
       .pipe(catchError(error => this.handleError(error)));
   }
 
+  // Classification Hierarchy
+  getClassificationHierarchy(): Observable<any[]> {
+    return this.http.get<any[]>('/api/classifications/hierarchy')
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
+  createClassificationWithParent(classification: any): Observable<any> {
+    return this.http.post('/api/classifications/withparent', classification)
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
   // Metering Data
   getMeteringData(params = {}): Observable<any[]> {
     return this.http.get<any[]>('/api/meteringdata', { params: new HttpParams({ fromObject: params }) })
@@ -114,6 +123,26 @@ export class ApiService {
     return this.http.post('/api/meteringdata/generate', formattedParams)
       .pipe(catchError(error => {
         console.error('Error in generateData:', error);
+        const errorMessage = error.error?.message || 'Failed to generate data';
+        return throwError(() => new Error(errorMessage));
+      }));
+  }
+
+  generateEquipmentData(params: any): Observable<any> {
+    // Format the data properly before sending
+    const formattedParams = {
+      equipmentId: parseInt(params.equipmentId),
+      startDate: params.startDate,
+      endDate: params.endDate,
+      intervalMinutes: parseInt(params.intervalMinutes),
+      baseValue: parseFloat(params.baseValue),
+      variance: parseFloat(params.variance)
+    };
+
+    console.log('Generating equipment data with params:', formattedParams);
+    return this.http.post('/api/meteringdata/generate', formattedParams)
+      .pipe(catchError(error => {
+        console.error('Error in generateEquipmentData:', error);
         const errorMessage = error.error?.message || 'Failed to generate data';
         return throwError(() => new Error(errorMessage));
       }));
@@ -186,6 +215,23 @@ export class ApiService {
 
   deleteTarget(id: number): Observable<any> {
     return this.http.delete(`/api/targets/${id}`)
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
+  // Equipment Targets
+  getEquipmentTargets(equipmentId: number): Observable<any[]> {
+    return this.http.get<any[]>(`/api/targets/equipment/${equipmentId}`)
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
+  createEquipmentTarget(target: any): Observable<any> {
+    return this.http.post('/api/targets/equipment', target)
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
+  // Target Rollup
+  getTargetRollup(classificationId: number): Observable<any> {
+    return this.http.get<any>(`/api/targets/rollup/${classificationId}`)
       .pipe(catchError(error => this.handleError(error)));
   }
 

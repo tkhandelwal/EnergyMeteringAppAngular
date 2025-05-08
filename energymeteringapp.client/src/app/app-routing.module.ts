@@ -1,3 +1,4 @@
+// app-routing.module.ts
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
@@ -10,7 +11,8 @@ import { SystemStatusComponent } from './components/system-status/system-status.
 import { EnergyFlowAnalysisComponent } from './components/energy-flow-analysis/energy-flow-analysis.component';
 import { ParetoAnalysisComponent } from './components/pareto-analysis/pareto-analysis.component';
 import { AdvancedAnalysisComponent } from './components/advanced-analysis/advanced-analysis.component';
-import { EquipmentComponent } from './components/equipment/equipment.component'; // Add this line
+import { EquipmentComponent } from './components/equipment/equipment.component';
+import { HierarchyViewerComponent } from './components/hierarchy-viewer/hierarchy-viewer.component';
 
 // Import ISO 50001 components
 import { Iso50001DashboardComponent } from './components/iso50001-dashboard/iso50001-dashboard.component';
@@ -30,6 +32,7 @@ const routes: Routes = [
   { path: 'advanced', component: AdvancedAnalysisComponent },
   { path: 'system-status', component: SystemStatusComponent },
   { path: 'equipment', component: EquipmentComponent },
+  { path: 'hierarchy', component: HierarchyViewerComponent },
 
   // ISO 50001 Routes
   { path: 'iso50001', component: Iso50001DashboardComponent },

@@ -68,34 +68,70 @@ namespace EnergyMeteringApp.Controllers
                     return BadRequest("Request cannot be null");
                 }
 
-                if (request.ClassificationId <= 0)
-                {
-                    return BadRequest("Invalid classification ID");
-                }
-
                 if (request.StartDate >= request.EndDate)
                 {
                     return BadRequest("Start date must be before end date");
                 }
 
-                // Check if classification exists
-                var classificationExists = await _context.Classifications.AnyAsync(c => c.Id == request.ClassificationId);
-                if (!classificationExists)
+                // Try to find the equipment
+                var equipment = await _context.Equipment.FindAsync(request.EquipmentId);
+                if (equipment == null)
                 {
-                    return BadRequest($"Classification with ID {request.ClassificationId} not found");
+                    return BadRequest($"Equipment with ID {request.EquipmentId} not found");
                 }
 
-                // If EquipmentId is provided, check if it exists
-                if (request.EquipmentId.HasValue)
+                // Handle classification
+                int classificationId;
+
+                // Check if ClassificationId has a value (must use request.ClassificationId != null instead of HasValue)
+                if (request.ClassificationId != null)
                 {
-                    var equipmentExists = await _context.Equipment.AnyAsync(e => e.Id == request.EquipmentId.Value);
-                    if (!equipmentExists)
+                    // Check if classification exists
+                    var classificationExists = await _context.Classifications.AnyAsync(c => c.Id == request.ClassificationId);
+                    if (!classificationExists)
+                    {
+                        return BadRequest($"Classification with ID {request.ClassificationId} not found");
+                    }
+
+                    // Use .Value to get the value from a nullable int
+                    classificationId = request.ClassificationId.Value;
+                }
+                else
+                {
+                    // Use the first classification of the equipment
+                    var equipmentWithClassifications = await _context.Equipment
+                        .Include(e => e.Classifications)
+                        .FirstOrDefaultAsync(e => e.Id == request.EquipmentId);
+
+                    // Add null check for the equipment itself
+                    if (equipmentWithClassifications == null)
                     {
                         return BadRequest($"Equipment with ID {request.EquipmentId} not found");
                     }
+
+                    // Check the Classifications collection
+                    if (equipmentWithClassifications.Classifications == null ||
+                        equipmentWithClassifications.Classifications.Count == 0)
+                    {
+                        return BadRequest("Equipment must have at least one classification to generate data");
+                    }
+
+                    classificationId = equipmentWithClassifications.Classifications.First().Id;
                 }
 
-                var data = await _meteringService.GenerateSyntheticDataAsync(request);
+                // Create a new request object with the determined classification ID
+                var dataRequest = new SyntheticDataRequest
+                {
+                    ClassificationId = classificationId,
+                    EquipmentId = request.EquipmentId,
+                    StartDate = request.StartDate,
+                    EndDate = request.EndDate,
+                    IntervalMinutes = request.IntervalMinutes,
+                    BaseValue = request.BaseValue,
+                    Variance = request.Variance
+                };
+
+                var data = await _meteringService.GenerateSyntheticDataAsync(dataRequest);
                 return Ok(data);
             }
             catch (Exception ex)

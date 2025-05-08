@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿// Classification.cs
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using System.Collections.Generic;
 
@@ -24,6 +25,16 @@ namespace EnergyMeteringApp.Models
 
         [Required]
         public string MeasurementUnit { get; set; } = "kWh"; // kWh, m³, etc.
+
+        // Hierarchical relationship
+        public int? ParentId { get; set; }
+        public Classification? Parent { get; set; }
+
+        [JsonIgnore]
+        public List<Classification> Children { get; set; } = new List<Classification>();
+
+        // Add a Level property to identify the hierarchy level
+        public string Level { get; set; } = "Equipment"; // Organization, Facility, Unit, Equipment
 
         // Add this missing navigation property for MeteringData
         [JsonIgnore]

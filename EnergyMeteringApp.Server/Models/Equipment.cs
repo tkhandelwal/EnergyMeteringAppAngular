@@ -1,4 +1,4 @@
-﻿// EnergyMeteringApp.Server/Models/Equipment.cs
+﻿// Equipment.cs
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -32,6 +32,11 @@ namespace EnergyMeteringApp.Models
         // This property will be included in serialization for the client
         public List<Classification> Classifications { get; set; } = new List<Classification>();
 
+        // Collection of metering data associated with this equipment
         public ICollection<MeteringData> MeteringData { get; set; } = new List<MeteringData>();
+
+        // Collection of targets associated with this equipment
+        [JsonIgnore]
+        public ICollection<Target> Targets { get; set; } = new List<Target>();
     }
 }
