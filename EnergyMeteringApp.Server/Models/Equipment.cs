@@ -33,6 +33,7 @@ namespace EnergyMeteringApp.Models
         public List<Classification> Classifications { get; set; } = new List<Classification>();
 
         // Collection of metering data associated with this equipment
+        [JsonIgnore]
         public ICollection<MeteringData> MeteringData { get; set; } = new List<MeteringData>();
 
         // Collection of targets associated with this equipment

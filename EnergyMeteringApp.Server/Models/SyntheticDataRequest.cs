@@ -4,7 +4,7 @@ namespace EnergyMeteringApp.Models
 {
     public class SyntheticDataRequest
     {
-        public int ClassificationId { get; set; }
+        public int? ClassificationId { get; set; }
         public int? EquipmentId { get; set; } // Optional equipment ID
 
         public DateTime StartDate { get; set; }

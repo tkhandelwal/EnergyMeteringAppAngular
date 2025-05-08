@@ -1,20 +1,17 @@
-﻿using System;
+﻿using EnergyMeteringApp.Models;
+using System.Text.Json.Serialization;
 
-namespace EnergyMeteringApp.Models
+public class MeteringData
 {
-    public class MeteringData
-    {
-        public int Id { get; set; }
-        public DateTime Timestamp { get; set; }
-        public double EnergyValue { get; set; } // kWh
-        public double Power { get; set; } // kW
+    public int Id { get; set; }
+    public DateTime Timestamp { get; set; }
+    public double EnergyValue { get; set; }
+    public double Power { get; set; }
 
-        // Updated to reference equipment directly
-        public int EquipmentId { get; set; }
-        public Equipment Equipment { get; set; } = null!;
+    public int EquipmentId { get; set; }
+    [JsonIgnore]  // Add this attribute to break the cycle
+    public Equipment Equipment { get; set; } = null!;
 
-        // Keep classification for backward compatibility and filtering
-        public int? ClassificationId { get; set; }
-        public Classification? Classification { get; set; }
-    }
+    public int? ClassificationId { get; set; }
+    public Classification? Classification { get; set; }
 }
