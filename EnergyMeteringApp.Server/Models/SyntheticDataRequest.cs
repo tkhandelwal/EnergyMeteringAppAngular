@@ -5,6 +5,8 @@ namespace EnergyMeteringApp.Models
     public class SyntheticDataRequest
     {
         public int ClassificationId { get; set; }
+        public int? EquipmentId { get; set; } // Optional equipment ID
+
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public int IntervalMinutes { get; set; } = 15; // Default 15-minute intervals

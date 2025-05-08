@@ -23,33 +23,58 @@ export class ApiService {
 
   getEquipmentById(id: number): Observable<any> {
     return this.http.get<any>(`/api/equipment/${id}`)
-      .pipe(catchError(error => this.handleError(error)));
+      .pipe(catchError(error => {
+        console.error('Error in getEquipmentById:', error);
+        return throwError(() => new Error(`Failed to load equipment with ID ${id}`));
+      }));
   }
 
   createEquipment(equipment: any): Observable<any> {
+    console.log('Creating equipment with payload:', equipment);
     return this.http.post('/api/equipment', equipment)
-      .pipe(catchError(error => this.handleError(error)));
+      .pipe(catchError(error => {
+        console.error('Error in createEquipment:', error);
+        let errorMessage = 'Failed to create equipment.';
+        if (error.status === 400) {
+          errorMessage = `Validation error: ${error.error?.message || 'Invalid data format'}`;
+        } else if (error.status === 500) {
+          errorMessage = `Server error: ${error.error?.message || 'An unexpected error occurred'}`;
+        }
+        return throwError(() => new Error(errorMessage));
+      }));
   }
 
   updateEquipment(id: number, equipment: any): Observable<any> {
     return this.http.put(`/api/equipment/${id}`, equipment)
-      .pipe(catchError(error => this.handleError(error)));
+      .pipe(catchError(error => {
+        console.error('Error in updateEquipment:', error);
+        return throwError(() => new Error(`Failed to update equipment with ID ${id}`));
+      }));
   }
 
   deleteEquipment(id: number): Observable<any> {
     return this.http.delete(`/api/equipment/${id}`)
-      .pipe(catchError(error => this.handleError(error)));
+      .pipe(catchError(error => {
+        console.error('Error in deleteEquipment:', error);
+        return throwError(() => new Error(`Failed to delete equipment with ID ${id}`));
+      }));
   }
 
   // Equipment-Classification relationships
   addClassificationToEquipment(equipmentId: number, classificationId: number): Observable<any> {
     return this.http.post(`/api/equipment/${equipmentId}/AddClassification/${classificationId}`, {})
-      .pipe(catchError(error => this.handleError(error)));
+      .pipe(catchError(error => {
+        console.error('Error in addClassificationToEquipment:', error);
+        return throwError(() => new Error('Failed to add classification to equipment'));
+      }));
   }
 
   removeClassificationFromEquipment(equipmentId: number, classificationId: number): Observable<any> {
     return this.http.delete(`/api/equipment/${equipmentId}/RemoveClassification/${classificationId}`)
-      .pipe(catchError(error => this.handleError(error)));
+      .pipe(catchError(error => {
+        console.error('Error in removeClassificationFromEquipment:', error);
+        return throwError(() => new Error('Failed to remove classification from equipment'));
+      }));
   }
 
   // Classifications
@@ -75,8 +100,23 @@ export class ApiService {
   }
 
   generateData(params: any): Observable<any> {
-    return this.http.post('/api/meteringdata/generate', params)
-      .pipe(catchError(error => this.handleError(error)));
+    // Format the data properly before sending
+    const formattedParams = {
+      classificationId: parseInt(params.classificationId),
+      startDate: params.startDate, // Ensure this is in ISO format
+      endDate: params.endDate,     // Ensure this is in ISO format
+      intervalMinutes: parseInt(params.intervalMinutes),
+      baseValue: parseFloat(params.baseValue),
+      variance: parseFloat(params.variance)
+    };
+
+    console.log('Generating data with params:', formattedParams);
+    return this.http.post('/api/meteringdata/generate', formattedParams)
+      .pipe(catchError(error => {
+        console.error('Error in generateData:', error);
+        const errorMessage = error.error?.message || 'Failed to generate data';
+        return throwError(() => new Error(errorMessage));
+      }));
   }
 
   // EnPIs

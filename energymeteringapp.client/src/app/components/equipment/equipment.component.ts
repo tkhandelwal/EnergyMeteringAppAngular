@@ -1,7 +1,18 @@
+// src/app/components/equipment/equipment.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
+
+interface Equipment {
+  id?: number;
+  name: string;
+  description?: string;
+  location?: string;
+  installDate: string;
+  status: string;
+  classifications?: any[];
+}
 
 @Component({
   selector: 'app-equipment',
@@ -10,7 +21,7 @@ import { ApiService } from '../../services/api.service';
   imports: [CommonModule, FormsModule]
 })
 export class EquipmentComponent implements OnInit {
-  equipment: any[] = [];
+  equipment: Equipment[] = [];
   classifications: any[] = [];
   selectedEquipment: any = null;
   loading = false;
@@ -65,13 +76,34 @@ export class EquipmentComponent implements OnInit {
     });
   }
 
+  validateForm(): boolean {
+    if (!this.formData.name.trim()) {
+      this.error = 'Equipment name is required';
+      return false;
+    }
+    return true;
+  }
+
   handleSubmit(event: Event): void {
     event.preventDefault();
-    this.loading = true;
 
+    if (!this.validateForm()) {
+      return;
+    }
+
+    this.loading = true;
+    this.error = null;
+
+    // Only include the basic equipment properties
     const payload = {
-      ...this.formData
+      name: this.formData.name,
+      description: this.formData.description,
+      location: this.formData.location,
+      installDate: this.formData.installDate,
+      status: this.formData.status
     };
+
+    console.log('Creating equipment with payload:', payload);
 
     this.apiService.createEquipment(payload).subscribe({
       next: () => {
@@ -81,7 +113,7 @@ export class EquipmentComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error creating equipment:', err);
-        this.error = 'Failed to create equipment. Please try again.';
+        this.error = `Failed to create equipment: ${err.message || 'Please try again'}`;
         this.loading = false;
       }
     });
@@ -145,7 +177,7 @@ export class EquipmentComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error adding classification:', err);
-        this.error = 'Failed to add classification. Please try again.';
+        this.error = `Failed to add classification: ${err.message || 'Please try again'}`;
         this.loading = false;
       }
     });
@@ -160,7 +192,7 @@ export class EquipmentComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error removing classification:', err);
-        this.error = 'Failed to remove classification. Please try again.';
+        this.error = `Failed to remove classification: ${err.message || 'Please try again'}`;
         this.loading = false;
       }
     });

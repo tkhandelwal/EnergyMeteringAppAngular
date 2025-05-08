@@ -27,7 +27,9 @@ namespace EnergyMeteringApp.Services
         {
             try
             {
-                IQueryable<MeteringData> query = _context.MeteringData.Include(m => m.Classification);
+                IQueryable<MeteringData> query = _context.MeteringData
+                    .Include(m => m.Classification)
+                    .Include(m => m.Equipment);
 
                 // Apply filters
                 if (startDate.HasValue)
@@ -58,10 +60,66 @@ namespace EnergyMeteringApp.Services
         {
             try
             {
+                // Validate the request
                 var classification = await _context.Classifications.FindAsync(request.ClassificationId);
                 if (classification == null)
                 {
-                    throw new ArgumentException("Classification not found");
+                    throw new ArgumentException($"Classification with ID {request.ClassificationId} not found");
+                }
+
+                // Find or use equipment
+                Equipment? equipment = null;
+
+                // If EquipmentId is provided in the request, use that
+                if (request.EquipmentId.HasValue)
+                {
+                    equipment = await _context.Equipment.FindAsync(request.EquipmentId.Value);
+                    if (equipment == null)
+                    {
+                        throw new ArgumentException($"Equipment with ID {request.EquipmentId} not found");
+                    }
+                }
+                else
+                {
+                    // Find equipment that has this classification
+                    equipment = await _context.Equipment
+                        .Include(e => e.Classifications)
+                        .FirstOrDefaultAsync(e => e.Classifications.Any(c => c.Id == request.ClassificationId));
+
+                    // If no equipment exists with this classification, we need to create one
+                    if (equipment == null)
+                    {
+                        _logger.LogInformation($"No equipment found for classification {request.ClassificationId}. Creating temporary equipment.");
+
+                        equipment = new Equipment
+                        {
+                            Name = $"Auto-generated for {classification.Name}",
+                            Description = $"Automatically created for data generation with classification {classification.Name}",
+                            Status = "Active",
+                            InstallDate = DateTime.UtcNow,
+                            CreatedAt = DateTime.UtcNow,
+                            Location = "Default Location",
+                            Classifications = new List<Classification>() // Initialize empty list
+                        };
+
+                        _context.Equipment.Add(equipment);
+                        await _context.SaveChangesAsync();
+
+                        // Now link the equipment with the classification
+                        if (equipment.Classifications != null)
+                        {
+                            equipment.Classifications.Add(classification);
+                            await _context.SaveChangesAsync();
+                        }
+
+                        _logger.LogInformation($"Created temporary equipment with ID {equipment.Id} for classification {classification.Name}");
+                    }
+                }
+
+                // Safety check - we must have an equipment at this point
+                if (equipment == null)
+                {
+                    throw new InvalidOperationException("Failed to find or create equipment for metering data");
                 }
 
                 var generatedData = new List<MeteringData>();
@@ -99,6 +157,7 @@ namespace EnergyMeteringApp.Services
                         EnergyValue = energyValue,
                         Power = power,
                         ClassificationId = request.ClassificationId,
+                        EquipmentId = equipment.Id  // Set the EquipmentId to satisfy the foreign key constraint
                     };
 
                     generatedData.Add(meteringData);

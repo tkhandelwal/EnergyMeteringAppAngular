@@ -1,4 +1,5 @@
-﻿using System;
+﻿// EnergyMeteringApp.Server/Models/Equipment.cs
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
@@ -24,10 +25,11 @@ namespace EnergyMeteringApp.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation properties
+        // Using JsonIgnore to prevent circular references in serialization
+        [JsonIgnore]
         public ICollection<EquipmentClassification> EquipmentClassifications { get; set; } = new List<EquipmentClassification>();
 
-        // Direct navigation property to Classifications (this is the key addition)
-        [JsonIgnore]
+        // This property will be included in serialization for the client
         public List<Classification> Classifications { get; set; } = new List<Classification>();
 
         public ICollection<MeteringData> MeteringData { get; set; } = new List<MeteringData>();

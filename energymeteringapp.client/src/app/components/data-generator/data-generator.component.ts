@@ -59,17 +59,26 @@ export class DataGeneratorComponent implements OnInit {
     } as any;
   }
 
+  // src/app/components/data-generator/data-generator.component.ts
   handleSubmit(event: Event): void {
     event.preventDefault();
     this.loading = true;
 
+    // Make sure we have the right data types
     const payload = {
-      ...this.formData,
-      classificationId: parseInt(this.formData.classificationId as string)
+      classificationId: parseInt(this.formData.classificationId as string),
+      startDate: this.formData.startDate,
+      endDate: this.formData.endDate,
+      intervalMinutes: this.formData.intervalMinutes,
+      baseValue: this.formData.baseValue,
+      variance: this.formData.variance
     };
 
+    console.log('Submitting data generation request:', payload);
+
     this.apiService.generateData(payload).subscribe({
-      next: () => {
+      next: (response) => {
+        console.log('Data generation successful:', response);
         this.showAlert('Synthetic data generated successfully!', 'success');
       },
       error: (error) => {
