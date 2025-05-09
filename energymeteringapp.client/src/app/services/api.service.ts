@@ -199,8 +199,13 @@ export class ApiService {
 
   // ISO 50001 EnPI Definitions
   getEnPIDefinitions(): Observable<any[]> {
-    return this.http.get<any[]>('/api/enpidefinitions')
-      .pipe(catchError(error => this.handleError(error)));
+    console.log('Fetching EnPI definitions');
+    return this.http.get<any[]>('/api/enpidefinitions').pipe(
+      catchError(error => {
+        console.error('Error in getEnPIDefinitions:', error);
+        return throwError(() => new Error('Failed to load EnPI definitions'));
+      })
+    );
   }
 
   createEnPIDefinition(definition: any): Observable<any> {
@@ -230,9 +235,20 @@ export class ApiService {
   }
 
   // Equipment Targets
+  // api.service.ts
   getEquipmentTargets(equipmentId: number): Observable<any[]> {
-    return this.http.get<any[]>(`/api/targets/equipment/${equipmentId}`)
-      .pipe(catchError(error => this.handleError(error)));
+    if (!equipmentId) {
+      console.error('Invalid equipment ID provided to getEquipmentTargets');
+      return of([]);
+    }
+
+    console.log(`Fetching targets for equipment ID ${equipmentId}`);
+    return this.http.get<any[]>(`/api/targets/equipment/${equipmentId}`).pipe(
+      catchError(error => {
+        console.error(`Error fetching targets for equipment ID ${equipmentId}:`, error);
+        return of([]); // Return empty array on error instead of throwing
+      })
+    );
   }
 
   createEquipmentTarget(target: any): Observable<any> {

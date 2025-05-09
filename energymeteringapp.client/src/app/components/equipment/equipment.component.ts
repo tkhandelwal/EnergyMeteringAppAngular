@@ -162,13 +162,21 @@ export class EquipmentComponent implements OnInit {
   }
 
   fetchEquipmentTargets(equipmentId: number): void {
+    if (!equipmentId) {
+      console.error('Invalid equipment ID');
+      this.equipmentTargets = [];
+      return;
+    }
+
     this.apiService.getEquipmentTargets(equipmentId).subscribe({
       next: (data) => {
-        this.equipmentTargets = data;
+        console.log('Equipment targets received:', data);
+        this.equipmentTargets = Array.isArray(data) ? data : [];
       },
       error: (err) => {
         console.error('Error fetching equipment targets:', err);
         this.error = 'Failed to load equipment targets.';
+        this.equipmentTargets = []; // Initialize to empty array on error
       }
     });
   }

@@ -72,15 +72,21 @@ export class TargetsManagerComponent implements OnInit {
     this.loading = true;
     this.apiService.getEnPIDefinitions().subscribe({
       next: (data) => {
-        this.enpiDefinitions = data || [];
+        console.log('EnPI definitions received:', data); // Add logging
+        this.enpiDefinitions = Array.isArray(data) ? data : [];
+
+        // Make sure to set default value if available
         if (this.enpiDefinitions && this.enpiDefinitions.length > 0) {
           this.formData.enpiDefinitionId = this.enpiDefinitions[0].id.toString();
+        } else {
+          console.warn('No EnPI definitions available');
         }
         this.loading = false;
       },
       error: (err) => {
         console.error('Error fetching EnPI definitions:', err);
         this.error = 'Failed to load EnPI definitions. Please try again.';
+        this.enpiDefinitions = []; // Initialize to empty array on error
         this.loading = false;
       }
     });
