@@ -257,25 +257,27 @@ export class TargetsManagerComponent implements OnInit {
     });
   }
 
+  // Improve updateTargetChart method in targets-manager.component.ts
+
   updateTargetChart(): void {
     if (!this.targets || this.targets.length === 0) {
       this.targetChartData = [];
       return;
     }
 
-    // Group targets by EnPI definition
+    // Group targets by EnPI definition with null safety
     const targetsByEnPI = new Map<number, any[]>();
 
     this.targets.forEach(target => {
-      if (!target || !target.enpiDefinitionId) return;
+      if (target && typeof target.enpiDefinitionId === 'number') {
+        if (!targetsByEnPI.has(target.enpiDefinitionId)) {
+          targetsByEnPI.set(target.enpiDefinitionId, []);
+        }
 
-      if (!targetsByEnPI.has(target.enpiDefinitionId)) {
-        targetsByEnPI.set(target.enpiDefinitionId, []);
-      }
-
-      const targetsForEnPI = targetsByEnPI.get(target.enpiDefinitionId);
-      if (targetsForEnPI) {
-        targetsForEnPI.push(target);
+        const targetsForEnPI = targetsByEnPI.get(target.enpiDefinitionId);
+        if (targetsForEnPI) {
+          targetsForEnPI.push(target);
+        }
       }
     });
 
@@ -286,30 +288,39 @@ export class TargetsManagerComponent implements OnInit {
       const enpiDef = this.enpiDefinitions.find(def => def && def.id === enpiId);
       if (!enpiDef) return;
 
-      // Sort targets by date
-      const sortedTargets = [...targets].sort((a, b) =>
-        new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime()
-      );
+      // Sort targets by date with null safety
+      const sortedTargets = [...targets]
+        .filter(t => t && t.targetDate)
+        .sort((a, b) => new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime());
+
+      if (sortedTargets.length === 0) return;
 
       // Find current EnPI value if available
       const currentEnPI = this.enpiList.find(enpi =>
         enpi &&
+        typeof enpi.classificationId === 'number' &&
         enpi.classificationId === enpiDef.classificationId &&
+        typeof enpi.formula === 'string' &&
         enpi.formula === enpiDef.formulaType
       );
 
-      const currentValue = currentEnPI ? currentEnPI.currentValue : null;
+      const currentValue = currentEnPI && typeof currentEnPI.currentValue === 'number' ?
+        currentEnPI.currentValue : null;
 
       // Add line for this EnPI
       this.targetChartData.push({
         x: sortedTargets.map(t => new Date(t.targetDate)),
         y: sortedTargets.map(t => {
-          if (t.targetType === 'AbsoluteValue') {
+          if (!t) return 0;
+
+          if (t.targetType === 'AbsoluteValue' && typeof t.targetValue === 'number') {
             return t.targetValue;
-          } else if (t.targetType === 'Reduction' && currentValue !== null) {
+          } else if (t.targetType === 'Reduction' &&
+            typeof t.targetValue === 'number' &&
+            currentValue !== null) {
             return currentValue * (1 - t.targetValue / 100);
           } else {
-            return t.targetValue;
+            return typeof t.targetValue === 'number' ? t.targetValue : 0;
           }
         }),
         type: 'scatter',

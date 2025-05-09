@@ -213,12 +213,15 @@ export class ActionPlansComponent implements OnInit {
   }
 
   getClassificationName(id: number): string {
-    const classification = this.classifications.find(c => c.id === id);
-    return classification ? classification.name : 'Unknown';
+    if (!id || !this.classifications) return 'Unknown';
+    const classification = this.classifications.find(c => c && c.id === id);
+    return classification && classification.name ? classification.name : 'Unknown';
   }
 
+  // Improve the updateCharts() method in action-plans.component.ts
+
   updateCharts(): void {
-    if (this.actionPlans.length === 0) {
+    if (!this.actionPlans || this.actionPlans.length === 0) {
       this.chartData = [];
       return;
     }
@@ -230,10 +233,12 @@ export class ActionPlansComponent implements OnInit {
     });
 
     this.actionPlans.forEach(plan => {
-      if (statusCounts[plan.status] !== undefined) {
-        statusCounts[plan.status]++;
-      } else {
-        statusCounts[plan.status] = 1;
+      if (plan && typeof plan.status === 'string') {
+        if (statusCounts[plan.status] !== undefined) {
+          statusCounts[plan.status]++;
+        } else {
+          statusCounts[plan.status] = 1;
+        }
       }
     });
 
@@ -257,15 +262,20 @@ export class ActionPlansComponent implements OnInit {
 
     const plotlyColors = colors.map(color => colorMap[color] || colorMap['secondary']);
 
-    // Energy savings by classification chart
+    // Energy savings by classification chart with null checks
     const savingsByClassification: { [key: string]: number } = {};
 
     this.actionPlans.forEach(plan => {
-      const className = this.getClassificationName(plan.classificationId);
-      if (!savingsByClassification[className]) {
-        savingsByClassification[className] = 0;
+      if (plan) {
+        const className = this.getClassificationName(plan.classificationId);
+        if (className) {
+          if (!savingsByClassification[className]) {
+            savingsByClassification[className] = 0;
+          }
+          savingsByClassification[className] += typeof plan.energySavingEstimate === 'number' ?
+            plan.energySavingEstimate : 0;
+        }
       }
-      savingsByClassification[className] += plan.energySavingEstimate || 0;
     });
 
     const classLabels = Object.keys(savingsByClassification);

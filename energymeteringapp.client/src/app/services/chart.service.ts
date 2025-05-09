@@ -97,7 +97,13 @@ export class ChartService {
   }
 
   // Color scales and helpers
+  // Improvements to the chart.service.ts for better null handling
   getColorScale(count: number): string[] {
+    // Ensure count is valid
+    if (!count || count <= 0) {
+      return ['rgba(66, 133, 244, 0.7)']; // Return at least one color
+    }
+
     const colors = [
       'rgba(66, 133, 244, 0.7)',
       'rgba(219, 68, 55, 0.7)',

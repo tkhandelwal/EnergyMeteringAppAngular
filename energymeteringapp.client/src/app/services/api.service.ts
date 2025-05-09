@@ -1,7 +1,7 @@
 // api.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 @Injectable({
@@ -151,12 +151,23 @@ export class ApiService {
   // EnPIs
   getEnPIs(): Observable<any[]> {
     return this.http.get<any[]>('/api/enpi')
-      .pipe(catchError(error => this.handleError(error)));
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching EnPIs:', error);
+          return of([]); // Return empty array on error
+        })
+      );
   }
 
   calculateEnPI(params: any): Observable<any> {
     return this.http.post('/api/enpi/calculate', params)
-      .pipe(catchError(error => this.handleError(error)));
+      .pipe(
+        catchError(error => {
+          console.error('Error calculating EnPI:', error);
+          const errorMessage = error.error?.message || 'Failed to calculate EnPI';
+          return throwError(() => new Error(errorMessage));
+        })
+      );
   }
 
   deleteEnPI(id: number): Observable<any> {

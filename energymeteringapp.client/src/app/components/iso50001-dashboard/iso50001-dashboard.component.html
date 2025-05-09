@@ -97,7 +97,7 @@
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
-          <div *ngIf="!loading && energySavingsChartData.length === 0" class="text-center py-5">
+          <div *ngIf="!loading && (!energySavingsChartData || energySavingsChartData.length === 0)" class="text-center py-5">
             <p>No EnPI data available for comparison. Create EnPIs with baseline values first.</p>
           </div>
           <div *ngIf="!loading && energySavingsChartData.length > 0" style="height: 400px;">
@@ -118,7 +118,7 @@
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
-          <div *ngIf="!loading && complianceChartData.length > 0" style="height: 400px;">
+          <div *ngIf="!loading && complianceChartData && complianceChartData.length > 0" style="height: 400px;">
             <plotly-plot [data]="complianceChartData"
                          [layout]="complianceChartLayout"
                          [config]="{responsive: true}">
@@ -188,10 +188,10 @@
                   {{baselines.length > 0 ? 'Completed' : 'In Progress'}}
                 </span>
               </td>
-              <td>{{baselines.length > 0 ? '2023-08-05' : 'N/A'}}</td>
+              <td>{{baselines && baselines.length > 0 ? '2023-08-05' : 'N/A'}}</td>
               <td>
                 <button class="btn btn-sm btn-outline-primary" (click)="navigateTo('/baselines')">
-                  {{baselines.length > 0 ? 'View' : 'Create'}}
+                  {{baselines && baselines.length > 0 ? 'View' : 'Create'}}
                 </button>
               </td>
             </tr>

@@ -1,4 +1,5 @@
 // iso50001-dashboard.component.ts
+// iso50001-dashboard.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -6,7 +7,17 @@ import { PlotlyModule } from 'angular-plotly.js';
 import { ApiService } from '../../services/api.service';
 import { ChartService } from '../../services/chart.service';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+
+interface SummaryData {
+  totalEnergy: number;
+  totalSavings: number;
+  enpiCount: number;
+  actionPlansCount: number;
+  completedActionPlans: number;
+  complianceScore: number;
+}
 
 @Component({
   selector: 'app-iso50001-dashboard',
@@ -15,7 +26,8 @@ import { firstValueFrom } from 'rxjs';
   imports: [CommonModule, FormsModule, PlotlyModule]
 })
 export class Iso50001DashboardComponent implements OnInit {
-  summary = {
+  // Properly define types to avoid optional chaining warnings
+  summary: SummaryData = {
     totalEnergy: 0,
     totalSavings: 0,
     enpiCount: 0,
@@ -59,18 +71,19 @@ export class Iso50001DashboardComponent implements OnInit {
 
     // Use Promise.all to fetch all required data in parallel
     Promise.all([
-      firstValueFrom(this.apiService.getClassifications().catch(() => [])),
-      firstValueFrom(this.apiService.getEnPIs().catch(() => [])),
-      firstValueFrom(this.apiService.getBaselines().catch(() => [])),
-      firstValueFrom(this.apiService.getTargets().catch(() => [])),
-      firstValueFrom(this.apiService.getActionPlans().catch(() => []))
+      firstValueFrom(this.apiService.getClassifications().pipe(catchError(() => of([])))),
+      firstValueFrom(this.apiService.getEnPIs().pipe(catchError(() => of([])))),
+      firstValueFrom(this.apiService.getBaselines().pipe(catchError(() => of([])))),
+      firstValueFrom(this.apiService.getTargets().pipe(catchError(() => of([])))),
+      firstValueFrom(this.apiService.getActionPlans().pipe(catchError(() => of([]))))
     ])
       .then(([classifications, enpis, baselines, targets, actionPlans]) => {
-        this.classifications = classifications || [];
-        this.enpis = enpis || [];
-        this.baselines = baselines || [];
-        this.targets = targets || [];
-        this.actionPlans = actionPlans || [];
+        // Ensure we have arrays for all data
+        this.classifications = Array.isArray(classifications) ? classifications : [];
+        this.enpis = Array.isArray(enpis) ? enpis : [];
+        this.baselines = Array.isArray(baselines) ? baselines : [];
+        this.targets = Array.isArray(targets) ? targets : [];
+        this.actionPlans = Array.isArray(actionPlans) ? actionPlans : [];
 
         this.updateSummary();
         this.updateCharts();
@@ -84,20 +97,34 @@ export class Iso50001DashboardComponent implements OnInit {
       });
   }
 
-  updateSummary(): void {
-    // Calculate total energy consumption from EnPIs
-    const totalEnergy = this.enpis
-      .filter(enpi => enpi && enpi.formula === 'TotalEnergy')
-      .reduce((sum, enpi) => sum + (enpi.currentValue || 0), 0);
 
-    // Calculate total energy savings
+  updateSummary(): void {
+    // Filter only valid EnPIs with formula "TotalEnergy"
+    const validEnpis = this.enpis.filter(enpi =>
+      enpi !== null &&
+      enpi !== undefined &&
+      typeof enpi.formula === 'string' &&
+      enpi.formula === 'TotalEnergy'
+    );
+
+    // Calculate total energy consumption from EnPIs
+    const totalEnergy = validEnpis.reduce((sum, enpi) =>
+      sum + (typeof enpi.currentValue === 'number' ? enpi.currentValue : 0), 0);
+
+    // Calculate total energy savings from EnPIs that have both baseline and current values
     const totalSavings = this.enpis
-      .filter(enpi => enpi && typeof enpi.baselineValue === 'number' && enpi.baselineValue > 0)
-      .reduce((sum, enpi) => sum + Math.max(0, (enpi.baselineValue || 0) - (enpi.currentValue || 0)), 0);
+      .filter(enpi =>
+        enpi !== null &&
+        enpi !== undefined &&
+        typeof enpi.baselineValue === 'number' &&
+        enpi.baselineValue > 0 &&
+        typeof enpi.currentValue === 'number'
+      )
+      .reduce((sum, enpi) => sum + Math.max(0, enpi.baselineValue - enpi.currentValue), 0);
 
     // Calculate action plan stats
     const completedActionPlans = this.actionPlans
-      .filter(plan => plan && plan.status === 'Completed')
+      .filter(plan => plan !== null && plan !== undefined && plan.status === 'Completed')
       .length;
 
     // Calculate compliance score
@@ -109,7 +136,7 @@ export class Iso50001DashboardComponent implements OnInit {
     const hasActionPlans = this.actionPlans.length > 0;
 
     const complianceItems = [hasPolicy, hasBaseline, hasEnPIs, hasTargets, hasActionPlans];
-    const complianceScore = complianceItems.filter(Boolean).length / complianceItems.length * 100;
+    const complianceScore = (complianceItems.filter(Boolean).length / complianceItems.length) * 100;
 
     this.summary = {
       totalEnergy: totalEnergy || 0,
@@ -129,24 +156,29 @@ export class Iso50001DashboardComponent implements OnInit {
 
   updateEnergySavingsChart(): void {
     // Filter EnPIs with baseline values for comparison, with null safety checks
-    const enpisWithBaseline = this.enpis
-      .filter(enpi => enpi &&
-        typeof enpi.baselineValue === 'number' &&
-        enpi.baselineValue > 0 &&
-        typeof enpi.currentValue === 'number');
+    const enpisWithBaseline = this.enpis.filter(enpi =>
+      enpi !== null &&
+      enpi !== undefined &&
+      typeof enpi.baselineValue === 'number' &&
+      enpi.baselineValue > 0 &&
+      typeof enpi.currentValue === 'number' &&
+      typeof enpi.name === 'string'
+    );
 
-    if (!enpisWithBaseline || enpisWithBaseline.length === 0) {
+    if (enpisWithBaseline.length === 0) {
       this.energySavingsChartData = [];
       return;
     }
 
     // Add null safety to mapping operations
-    const labels = enpisWithBaseline.map(enpi => enpi.name || 'Unknown');
-    const baselineValues = enpisWithBaseline.map(enpi => enpi.baselineValue || 0);
-    const currentValues = enpisWithBaseline.map(enpi => enpi.currentValue || 0);
+    const labels = enpisWithBaseline.map(enpi => enpi.name);
+    const baselineValues = enpisWithBaseline.map(enpi => enpi.baselineValue);
+    const currentValues = enpisWithBaseline.map(enpi => enpi.currentValue);
     const savings = enpisWithBaseline.map(enpi => {
-      if (!enpi.baselineValue) return '0';
-      return ((enpi.baselineValue - (enpi.currentValue || 0)) / enpi.baselineValue * 100).toFixed(1);
+      const baselineValue = enpi.baselineValue || 0;
+      const currentValue = enpi.currentValue || 0;
+      if (baselineValue <= 0) return '0';
+      return ((baselineValue - currentValue) / baselineValue * 100).toFixed(1);
     });
 
     // Create chart data
@@ -237,7 +269,13 @@ export class Iso50001DashboardComponent implements OnInit {
     complianceData[5].score = 70;
 
     // Improvement score depends on completed action plans
-    complianceData[6].score = this.actionPlans.filter(p => p && p.status === 'Completed').length > 0 ? 65 : 40;
+    const completedActionPlans = this.actionPlans.filter(p =>
+      p !== null &&
+      p !== undefined &&
+      p.status === 'Completed'
+    ).length;
+
+    complianceData[6].score = completedActionPlans > 0 ? 65 : 40;
 
     this.complianceChartData = [{
       type: 'scatterpolar',
@@ -261,34 +299,31 @@ export class Iso50001DashboardComponent implements OnInit {
   }
 
   updateEnPITrendChart(): void {
-    // If we have real EnPI data, we could try to show trends
-    // For now, we'll just use mock data
+    // Generate dates for the last 6 months
     const today = new Date();
     const mockDates: string[] = [];
 
-    // Generate dates for the last 6 months
     for (let i = 0; i < 6; i++) {
       const date = new Date();
       date.setMonth(today.getMonth() - 5 + i);
       mockDates.push(date.toISOString().split('T')[0]);
     }
 
-    // Check if we have enough real EnPI data to show trends
-    const enpisByName = this.enpis
-      .filter(enpi => enpi && enpi.name)
-      .reduce((acc: { [key: string]: any[] }, enpi) => {
-        const name = enpi.name || 'Unknown';
-        if (!acc[name]) acc[name] = [];
-        acc[name].push(enpi);
-        return acc;
-      }, {});
+    // Group EnPIs by name to identify those with multiple entries
+    const enpisByName: { [key: string]: any[] } = {};
 
-    // If we have real data with multiple points for any EnPI, use it
-    // otherwise use mock data
-    if (Object.values(enpisByName).some(enpis => enpis.length > 1)) {
-      // Real data processing would go here
-      // For now, still using mocks
+    for (const enpi of this.enpis) {
+      if (enpi && typeof enpi.name === 'string') {
+        const name = enpi.name;
+        if (!enpisByName[name]) {
+          enpisByName[name] = [];
+        }
+        enpisByName[name].push(enpi);
+      }
     }
+
+    // If we have real data with multiple points for any EnPI, we could use it
+    // For now, use mock data for demonstration
 
     // Mock data for 3 EnPIs
     const mockEnPI1 = [15.2, 14.8, 14.5, 14.3, 14.0, 13.8];
