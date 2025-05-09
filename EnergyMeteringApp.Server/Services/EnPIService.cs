@@ -20,20 +20,25 @@ namespace EnergyMeteringApp.Services
             MeteringService meteringService,
             ILogger<EnPIService> logger)
         {
-            _context = context;
-            _meteringService = meteringService;
-            _logger = logger;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _meteringService = meteringService ?? throw new ArgumentNullException(nameof(meteringService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<EnPI> CalculateEnPIAsync(EnPICalculationRequest request)
         {
             try
             {
+                if (request == null)
+                {
+                    throw new ArgumentNullException(nameof(request));
+                }
+
                 // Validate request
                 var classification = await _context.Classifications.FindAsync(request.ClassificationId);
                 if (classification == null)
                 {
-                    throw new ArgumentException("Classification not found");
+                    throw new ArgumentException($"Classification with ID {request.ClassificationId} not found");
                 }
 
                 // Get current period data
@@ -42,34 +47,46 @@ namespace EnergyMeteringApp.Services
                     request.EndDate,
                     request.ClassificationId);
 
-                if (!currentPeriodData.Any())
+                if (currentPeriodData == null || !currentPeriodData.Any())
                 {
-                    throw new ArgumentException("No data available for the selected period");
+                    throw new ArgumentException($"No data available for the selected period: {request.StartDate} to {request.EndDate}");
                 }
 
+                // Use default formula if none provided
+                string formula = request.Formula ?? "TotalEnergy";
+
                 // Calculate current value based on formula
-                double currentValue = CalculateMetric(currentPeriodData, request.Formula);
+                double currentValue = CalculateMetric(currentPeriodData, formula);
 
                 // Calculate baseline value if requested
                 double baselineValue = 0;
                 if (request.BaselineStartDate.HasValue && request.BaselineEndDate.HasValue)
                 {
                     var baselineData = await _meteringService.GetMeteringDataAsync(
-                        request.BaselineStartDate,
-                        request.BaselineEndDate,
+                        request.BaselineStartDate.Value,
+                        request.BaselineEndDate.Value,
                         request.ClassificationId);
 
-                    if (baselineData.Any())
+                    if (baselineData != null && baselineData.Any())
                     {
-                        baselineValue = CalculateMetric(baselineData, request.Formula);
+                        baselineValue = CalculateMetric(baselineData, formula);
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"No baseline data available for the period: {request.BaselineStartDate} to {request.BaselineEndDate}");
                     }
                 }
+
+                // Determine name if not provided
+                string name = !string.IsNullOrWhiteSpace(request.Name)
+                    ? request.Name
+                    : $"{classification.Name} - {formula}";
 
                 // Create and save the EnPI
                 var enpi = new EnPI
                 {
-                    Name = request.Name,
-                    Formula = request.Formula,
+                    Name = name,
+                    Formula = formula,
                     BaselineValue = baselineValue,
                     CurrentValue = currentValue,
                     CalculationDate = DateTime.UtcNow,
@@ -79,7 +96,12 @@ namespace EnergyMeteringApp.Services
                 _context.EnPIs.Add(enpi);
                 await _context.SaveChangesAsync();
 
-                return enpi;
+                // Reload with related entities
+                var savedEnpi = await _context.EnPIs
+                    .Include(e => e.Classification)
+                    .FirstOrDefaultAsync(e => e.Id == enpi.Id);
+
+                return savedEnpi ?? enpi;
             }
             catch (Exception ex)
             {
@@ -88,11 +110,16 @@ namespace EnergyMeteringApp.Services
             }
         }
 
-        private double CalculateMetric(IEnumerable<MeteringData> data, string formula)
+        private double CalculateMetric(IEnumerable<MeteringData> data, string? formula)
         {
-            if (string.IsNullOrEmpty(formula))
+            if (data == null || !data.Any())
             {
-                // Default to TotalEnergy if formula is null or empty
+                return 0;
+            }
+
+            // Default to TotalEnergy if formula is null or empty
+            if (string.IsNullOrWhiteSpace(formula))
+            {
                 return data.Sum(d => d.EnergyValue);
             }
 
@@ -102,7 +129,12 @@ namespace EnergyMeteringApp.Services
                     return data.Sum(d => d.EnergyValue);
 
                 case "EnergyPerHour":
-                    double totalHours = (data.Max(d => d.Timestamp) - data.Min(d => d.Timestamp)).TotalHours;
+                    var timestamps = data.Select(d => d.Timestamp).OrderBy(t => t).ToList();
+                    if (timestamps.Count < 2)
+                    {
+                        return data.Sum(d => d.EnergyValue);
+                    }
+                    double totalHours = (timestamps.Last() - timestamps.First()).TotalHours;
                     return totalHours > 0 ? data.Sum(d => d.EnergyValue) / totalHours : 0;
 
                 case "MaxPower":
@@ -112,7 +144,8 @@ namespace EnergyMeteringApp.Services
                     return data.Average(d => d.Power);
 
                 default:
-                    return data.Sum(d => d.EnergyValue); // Default to TotalEnergy for unknown formulas
+                    _logger.LogWarning($"Unknown formula type: {formula}. Using TotalEnergy instead.");
+                    return data.Sum(d => d.EnergyValue);
             }
         }
     }

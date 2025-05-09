@@ -1,10 +1,10 @@
+// baseline-manager.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PlotlyModule } from 'angular-plotly.js';
 import { ApiService } from '../../services/api.service';
 import { ChartService } from '../../services/chart.service';
-import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-baseline-manager',
@@ -19,7 +19,7 @@ export class BaselineManagerComponent implements OnInit {
   loading = false;
   error: string | null = null;
   success: string | null = null;
-  Math = Math; // Make Math available to the template
+  Math = Math;
 
   formData = {
     classificationId: '',
@@ -46,9 +46,9 @@ export class BaselineManagerComponent implements OnInit {
     this.loading = true;
     this.apiService.getClassifications().subscribe({
       next: (data) => {
-        this.classifications = data;
-        if (data.length > 0) {
-          this.formData.classificationId = data[0].id;
+        this.classifications = data || [];
+        if (this.classifications.length > 0) {
+          this.formData.classificationId = this.classifications[0].id.toString();
         }
         this.loading = false;
       },
@@ -64,7 +64,7 @@ export class BaselineManagerComponent implements OnInit {
     this.loading = true;
     this.apiService.getBaselines().subscribe({
       next: (data) => {
-        this.baselines = data;
+        this.baselines = data || [];
         this.loading = false;
       },
       error: (err) => {
@@ -78,12 +78,27 @@ export class BaselineManagerComponent implements OnInit {
   handleSubmit(event: Event): void {
     event.preventDefault();
     this.loading = true;
+    this.error = null;
+    this.success = null;
+
+    if (!this.formData.classificationId) {
+      this.error = 'Please select a classification';
+      this.loading = false;
+      return;
+    }
+
+    // Validate dates
+    if (new Date(this.formData.startDate) >= new Date(this.formData.endDate)) {
+      this.error = 'Start date must be before end date';
+      this.loading = false;
+      return;
+    }
 
     const payload = {
-      classificationId: parseInt(this.formData.classificationId as string),
-      startDate: new Date(this.formData.startDate),
-      endDate: new Date(this.formData.endDate),
-      description: this.formData.description
+      classificationId: parseInt(this.formData.classificationId),
+      startDate: new Date(this.formData.startDate).toISOString(),
+      endDate: new Date(this.formData.endDate).toISOString(),
+      description: this.formData.description || 'Annual baseline'
     };
 
     this.apiService.createBaseline(payload).subscribe({
@@ -94,33 +109,46 @@ export class BaselineManagerComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error creating baseline:', err);
-        this.error = 'Failed to create baseline. Please try again.';
+        this.error = err.error?.message || 'Failed to create baseline. Please try again.';
         this.loading = false;
       }
     });
   }
 
   handleDelete(id: number): void {
+    if (!id) {
+      this.error = 'Invalid baseline ID';
+      return;
+    }
+
     this.loading = true;
+    this.error = null;
+    this.success = null;
+
     this.apiService.deleteBaseline(id).subscribe({
       next: () => {
         this.success = 'Baseline deleted successfully!';
         this.fetchBaselines();
-        if (this.selectedBaseline && this.selectedBaseline.id === id) {
+        if (this.selectedBaseline?.id === id) {
           this.selectedBaseline = null;
+          this.meteringData = [];
+          this.baselineChartData = [];
         }
       },
       error: (err) => {
         console.error('Error deleting baseline:', err);
-        this.error = 'Failed to delete baseline. Please try again.';
+        this.error = err.error?.message || 'Failed to delete baseline. Please try again.';
         this.loading = false;
       }
     });
   }
 
   showBaselineData(baseline: any): void {
+    if (!baseline) return;
+
     this.selectedBaseline = baseline;
     this.loading = true;
+    this.error = null;
 
     // Get metering data for the baseline period
     const params = {
@@ -131,20 +159,22 @@ export class BaselineManagerComponent implements OnInit {
 
     this.apiService.getMeteringData(params).subscribe({
       next: (data) => {
-        this.meteringData = data;
+        this.meteringData = data || [];
         this.updateBaselineChart();
         this.loading = false;
       },
       error: (err) => {
         console.error('Error fetching baseline data:', err);
-        this.error = 'Failed to load baseline data. Please try again.';
+        this.error = err.error?.message || 'Failed to load baseline data. Please try again.';
+        this.meteringData = [];
+        this.baselineChartData = [];
         this.loading = false;
       }
     });
   }
 
   updateBaselineChart(): void {
-    if (!this.selectedBaseline || this.meteringData.length === 0) {
+    if (!this.selectedBaseline || !this.meteringData || this.meteringData.length === 0) {
       this.baselineChartData = [];
       return;
     }
@@ -153,14 +183,16 @@ export class BaselineManagerComponent implements OnInit {
     const dataByDate = new Map<string, { energy: number, power: number, count: number }>();
 
     this.meteringData.forEach(item => {
+      if (!item) return;
+
       const date = new Date(item.timestamp).toISOString().split('T')[0];
       if (!dataByDate.has(date)) {
         dataByDate.set(date, { energy: 0, power: 0, count: 0 });
       }
 
       const current = dataByDate.get(date)!;
-      current.energy += item.energyValue;
-      current.power += item.power;
+      current.energy += (item.energyValue || 0);
+      current.power += (item.power || 0);
       current.count++;
     });
 
@@ -214,14 +246,16 @@ export class BaselineManagerComponent implements OnInit {
         tickangle: -45
       },
       yaxis: {
-        title: 'Energy (kWh)'
+        title: 'Energy (kWh)',
+        rangemode: 'tozero'
       },
       yaxis2: {
         title: 'Power (kW)',
         titlefont: { color: 'rgb(219, 64, 82)' },
         tickfont: { color: 'rgb(219, 64, 82)' },
         overlaying: 'y',
-        side: 'right'
+        side: 'right',
+        rangemode: 'tozero'
       },
       height: 500,
       legend: {
@@ -232,19 +266,19 @@ export class BaselineManagerComponent implements OnInit {
   }
 
   getClassificationName(id: number): string {
+    if (!id || !this.classifications) return 'Unknown';
     const classification = this.classifications.find(c => c.id === id);
     return classification ? classification.name : 'Unknown';
   }
 
-  // New method to calculate max power for the template
+  // Methods for the template
   getMaxPower(): number {
     if (!this.meteringData || this.meteringData.length === 0) return 0;
-    return Math.max(...this.meteringData.map(item => item.power));
+    return Math.max(...this.meteringData.map(item => item?.power || 0));
   }
 
-  // New method to calculate total energy for the template
   getTotalEnergy(): number {
     if (!this.meteringData || this.meteringData.length === 0) return 0;
-    return this.meteringData.reduce((sum, item) => sum + item.energyValue, 0);
+    return this.meteringData.reduce((sum, item) => sum + (item?.energyValue || 0), 0);
   }
 }

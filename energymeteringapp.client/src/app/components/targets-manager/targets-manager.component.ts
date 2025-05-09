@@ -1,4 +1,4 @@
-// energymeteringapp.client/src/app/components/targets-manager/targets-manager.component.ts
+// targets-manager.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -56,9 +56,9 @@ export class TargetsManagerComponent implements OnInit {
   fetchClassifications(): void {
     this.apiService.getClassifications().subscribe({
       next: (data) => {
-        this.classifications = data;
-        if (data.length > 0) {
-          this.enpiDefFormData.classificationId = data[0].id;
+        this.classifications = data || [];
+        if (this.classifications && this.classifications.length > 0) {
+          this.enpiDefFormData.classificationId = this.classifications[0].id.toString();
         }
       },
       error: (err) => {
@@ -72,9 +72,9 @@ export class TargetsManagerComponent implements OnInit {
     this.loading = true;
     this.apiService.getEnPIDefinitions().subscribe({
       next: (data) => {
-        this.enpiDefinitions = data;
-        if (data.length > 0) {
-          this.formData.enpiDefinitionId = data[0].id;
+        this.enpiDefinitions = data || [];
+        if (this.enpiDefinitions && this.enpiDefinitions.length > 0) {
+          this.formData.enpiDefinitionId = this.enpiDefinitions[0].id.toString();
         }
         this.loading = false;
       },
@@ -90,7 +90,7 @@ export class TargetsManagerComponent implements OnInit {
     this.loading = true;
     this.apiService.getTargets().subscribe({
       next: (data) => {
-        this.targets = data;
+        this.targets = data || [];
         this.updateTargetChart();
         this.loading = false;
       },
@@ -105,10 +105,13 @@ export class TargetsManagerComponent implements OnInit {
   fetchEnPIs(): void {
     this.apiService.getEnPIs().subscribe({
       next: (data) => {
-        this.enpiList = data;
+        this.enpiList = data || [];
+        // Update chart with fresh EnPI data
+        this.updateTargetChart();
       },
       error: (err) => {
         console.error('Error fetching EnPIs:', err);
+        // Don't show error here since this is supplementary data
       }
     });
   }
@@ -116,24 +119,39 @@ export class TargetsManagerComponent implements OnInit {
   handleSubmit(event: Event): void {
     event.preventDefault();
     this.loading = true;
+    this.error = null;
+    this.success = null;
+
+    // Validate required fields
+    if (!this.formData.enpiDefinitionId) {
+      this.error = 'Please select an EnPI definition';
+      this.loading = false;
+      return;
+    }
+
+    if (this.formData.targetValue <= 0) {
+      this.error = 'Target value must be greater than zero';
+      this.loading = false;
+      return;
+    }
 
     const payload = {
-      enpiDefinitionId: parseInt(this.formData.enpiDefinitionId as string),
+      enpiDefinitionId: parseInt(this.formData.enpiDefinitionId),
       targetValue: this.formData.targetValue,
-      targetType: this.formData.targetType,
-      targetDate: new Date(this.formData.targetDate),
-      description: this.formData.description
+      targetType: this.formData.targetType || 'Reduction',
+      targetDate: new Date(this.formData.targetDate).toISOString(),
+      description: this.formData.description || 'Annual reduction target'
     };
 
     this.apiService.createTarget(payload).subscribe({
-      next: (data) => {
+      next: () => {
         this.success = 'Target created successfully!';
-        this.fetchTargets();
-        this.formData.description = 'Annual reduction target';
+        this.fetchTargets(); // Refresh the targets list
+        this.formData.description = 'Annual reduction target'; // Reset just the description
       },
       error: (err) => {
         console.error('Error creating target:', err);
-        this.error = 'Failed to create target. Please try again.';
+        this.error = err.error?.message || 'Failed to create target. Please try again.';
         this.loading = false;
       }
     });
@@ -142,12 +160,34 @@ export class TargetsManagerComponent implements OnInit {
   handleEnPIDefSubmit(event: Event): void {
     event.preventDefault();
     this.loading = true;
+    this.error = null;
+    this.success = null;
+
+    // Validate required fields
+    if (!this.enpiDefFormData.name) {
+      this.error = 'Name is required';
+      this.loading = false;
+      return;
+    }
+
+    if (!this.enpiDefFormData.classificationId) {
+      this.error = 'Classification is required';
+      this.loading = false;
+      return;
+    }
+
+    // Require normalization unit if normalize by is not None
+    if (this.enpiDefFormData.normalizeBy !== 'None' && !this.enpiDefFormData.normalizationUnit) {
+      this.error = 'Normalization unit is required when normalization is selected';
+      this.loading = false;
+      return;
+    }
 
     const payload = {
       name: this.enpiDefFormData.name,
-      classificationId: parseInt(this.enpiDefFormData.classificationId as string),
-      formulaType: this.enpiDefFormData.formulaType,
-      normalizeBy: this.enpiDefFormData.normalizeBy,
+      classificationId: parseInt(this.enpiDefFormData.classificationId),
+      formulaType: this.enpiDefFormData.formulaType || 'TotalEnergy',
+      normalizeBy: this.enpiDefFormData.normalizeBy || 'None',
       normalizationUnit: this.enpiDefFormData.normalizationUnit,
       description: this.enpiDefFormData.description
     };
@@ -155,50 +195,70 @@ export class TargetsManagerComponent implements OnInit {
     this.apiService.createEnPIDefinition(payload).subscribe({
       next: (data) => {
         this.success = 'EnPI Definition created successfully!';
-        this.fetchEnPIDefinitions();
+        this.fetchEnPIDefinitions(); // Refresh the list
+
+        // Reset form fields
         this.enpiDefFormData.name = '';
         this.enpiDefFormData.description = '';
+        this.enpiDefFormData.normalizationUnit = '';
+        // Keep the selected classification to make it easier to create multiple definitions
       },
       error: (err) => {
         console.error('Error creating EnPI definition:', err);
-        this.error = 'Failed to create EnPI definition. Please try again.';
+        this.error = err.error?.message || 'Failed to create EnPI definition. Please try again.';
         this.loading = false;
       }
     });
   }
 
   handleDelete(id: number): void {
+    if (!id) {
+      this.error = 'Invalid target ID';
+      return;
+    }
+
     this.loading = true;
+    this.error = null;
+    this.success = null;
+
     this.apiService.deleteTarget(id).subscribe({
       next: () => {
         this.success = 'Target deleted successfully!';
-        this.fetchTargets();
+        this.fetchTargets(); // Refresh the targets list
       },
       error: (err) => {
         console.error('Error deleting target:', err);
-        this.error = 'Failed to delete target. Please try again.';
+        this.error = err.error?.message || 'Failed to delete target. Please try again.';
         this.loading = false;
       }
     });
   }
 
   handleEnPIDefDelete(id: number): void {
+    if (!id) {
+      this.error = 'Invalid EnPI definition ID';
+      return;
+    }
+
     this.loading = true;
+    this.error = null;
+    this.success = null;
+
     this.apiService.deleteEnPIDefinition(id).subscribe({
       next: () => {
         this.success = 'EnPI Definition deleted successfully!';
-        this.fetchEnPIDefinitions();
+        this.fetchEnPIDefinitions(); // Refresh the list
       },
       error: (err) => {
         console.error('Error deleting EnPI definition:', err);
-        this.error = 'Failed to delete EnPI definition. It may have targets associated with it.';
+        this.error = err.error?.message || 'Failed to delete EnPI definition. It may have targets associated with it.';
         this.loading = false;
       }
     });
   }
 
   updateTargetChart(): void {
-    if (this.targets.length === 0) {
+    if (!this.targets || this.targets.length === 0) {
       this.targetChartData = [];
       return;
     }
@@ -207,17 +267,23 @@ export class TargetsManagerComponent implements OnInit {
     const targetsByEnPI = new Map<number, any[]>();
 
     this.targets.forEach(target => {
+      if (!target || !target.enpiDefinitionId) return;
+
       if (!targetsByEnPI.has(target.enpiDefinitionId)) {
         targetsByEnPI.set(target.enpiDefinitionId, []);
       }
-      targetsByEnPI.get(target.enpiDefinitionId)!.push(target);
+
+      const targetsForEnPI = targetsByEnPI.get(target.enpiDefinitionId);
+      if (targetsForEnPI) {
+        targetsForEnPI.push(target);
+      }
     });
 
     // Create chart data
     this.targetChartData = [];
 
     targetsByEnPI.forEach((targets, enpiId) => {
-      const enpiDef = this.enpiDefinitions.find(def => def.id === enpiId);
+      const enpiDef = this.enpiDefinitions.find(def => def && def.id === enpiId);
       if (!enpiDef) return;
 
       // Sort targets by date
@@ -227,6 +293,7 @@ export class TargetsManagerComponent implements OnInit {
 
       // Find current EnPI value if available
       const currentEnPI = this.enpiList.find(enpi =>
+        enpi &&
         enpi.classificationId === enpiDef.classificationId &&
         enpi.formula === enpiDef.formulaType
       );
@@ -239,7 +306,7 @@ export class TargetsManagerComponent implements OnInit {
         y: sortedTargets.map(t => {
           if (t.targetType === 'AbsoluteValue') {
             return t.targetValue;
-          } else if (t.targetType === 'Reduction' && currentValue) {
+          } else if (t.targetType === 'Reduction' && currentValue !== null) {
             return currentValue * (1 - t.targetValue / 100);
           } else {
             return t.targetValue;
@@ -247,7 +314,7 @@ export class TargetsManagerComponent implements OnInit {
         }),
         type: 'scatter',
         mode: 'lines+markers',
-        name: enpiDef.name,
+        name: enpiDef.name || `EnPI ${enpiDef.id}`,
         marker: { size: 8 }
       });
 
@@ -258,7 +325,7 @@ export class TargetsManagerComponent implements OnInit {
           y: [currentValue],
           type: 'scatter',
           mode: 'markers',
-          name: `${enpiDef.name} (Current)`,
+          name: `${enpiDef.name || `EnPI ${enpiDef.id}`} (Current)`,
           marker: {
             size: 12,
             symbol: 'star'
@@ -286,7 +353,9 @@ export class TargetsManagerComponent implements OnInit {
   }
 
   getEnPIDefName(id: number): string {
-    const def = this.enpiDefinitions.find(d => d.id === id);
-    return def ? def.name : 'Unknown';
+    if (!id || !this.enpiDefinitions) return 'Unknown';
+
+    const def = this.enpiDefinitions.find(d => d && d.id === id);
+    return def ? (def.name || `Definition ${id}`) : `Unknown (${id})`;
   }
 }

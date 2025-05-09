@@ -9,9 +9,10 @@ public class MeteringData
     public double Power { get; set; }
 
     public int EquipmentId { get; set; }
-    [JsonIgnore]  // Add this attribute to break the cycle
-    public Equipment Equipment { get; set; } = null!;
+    [JsonIgnore]
+    public Equipment? Equipment { get; set; } = null; // Make nullable but with default
 
     public int? ClassificationId { get; set; }
-    public Classification? Classification { get; set; }
+    [JsonIgnore]
+    public Classification? Classification { get; set; } = null; // Make nullable but with default
 }

@@ -66,12 +66,22 @@ export class DocumentationGeneratorComponent implements OnInit {
     // For now, we'll simulate a delay and generate mock content
     setTimeout(() => {
       try {
+        // Validate required fields
+        if (!this.formData.title || !this.formData.documentType) {
+          throw new Error('Title and document type are required');
+        }
+
         this.documentContent = this.generateMockDocument();
+        if (!this.documentContent) {
+          throw new Error('Failed to generate document content');
+        }
+
         this.previewMode = true;
         this.success = 'Document generated successfully!';
       } catch (err) {
-        this.error = 'Failed to generate document. Please try again.';
+        this.error = err instanceof Error ? err.message : 'Failed to generate document. Please try again.';
         console.error('Error generating document:', err);
+        this.documentContent = ''; // Clear any partial content
       } finally {
         this.loading = false;
       }

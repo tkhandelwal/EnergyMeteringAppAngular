@@ -81,19 +81,18 @@ namespace EnergyMeteringApp.Controllers
                 }
 
                 // Handle classification
-                int classificationId;
+                int classificationId; // Initialize variable first
 
                 // Check if ClassificationId has a value (must use request.ClassificationId != null instead of HasValue)
-                if (request.ClassificationId != null)
+                if (request.ClassificationId.HasValue)
                 {
                     // Check if classification exists
-                    var classificationExists = await _context.Classifications.AnyAsync(c => c.Id == request.ClassificationId);
+                    var classificationExists = await _context.Classifications.AnyAsync(c => c.Id == request.ClassificationId.Value);
                     if (!classificationExists)
                     {
-                        return BadRequest($"Classification with ID {request.ClassificationId} not found");
+                        return BadRequest($"Classification with ID {request.ClassificationId.Value} not found");
                     }
 
-                    // Use .Value to get the value from a nullable int
                     classificationId = request.ClassificationId.Value;
                 }
                 else

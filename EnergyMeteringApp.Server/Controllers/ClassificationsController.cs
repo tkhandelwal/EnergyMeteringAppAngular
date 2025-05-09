@@ -45,21 +45,63 @@ namespace EnergyMeteringApp.Controllers
         [HttpGet("Hierarchy")]
         public async Task<ActionResult<IEnumerable<object>>> GetClassificationHierarchy()
         {
-            // Get top-level classifications (Organization level)
-            var topLevelClassifications = await _context.Classifications
-                .Where(c => c.ParentId == null)
+            // Get all classifications and equipment at once to prevent N+1 queries
+            var allClassifications = await _context.Classifications.ToListAsync();
+            var allEquipment = await _context.Equipment
+                .Include(e => e.Classifications)
                 .ToListAsync();
 
-            // Build hierarchical structure
-            var hierarchy = new List<object>();
+            // Find top-level classifications (Organization level)
+            var topLevelClassifications = allClassifications
+                .Where(c => c.ParentId == null)
+                .ToList();
 
-            foreach (var topLevel in topLevelClassifications)
-            {
-                hierarchy.Add(await BuildClassificationHierarchy(topLevel));
-            }
+            // Build hierarchical structure
+            var hierarchy = topLevelClassifications.Select(topLevel =>
+                BuildClassificationHierarchy(topLevel, allClassifications, allEquipment)).ToList();
 
             return hierarchy;
         }
+
+        private object BuildClassificationHierarchy(
+    Classification classification,
+    List<Classification> allClassifications,
+    List<Equipment> allEquipment)
+        {
+            // Get children from in-memory collection
+            var children = allClassifications
+                .Where(c => c.ParentId == classification.Id)
+                .ToList();
+
+            var childrenObjects = children
+                .Select(child => BuildClassificationHierarchy(child, allClassifications, allEquipment))
+                .ToList();
+
+            // Get equipment for this classification from in-memory collection with null checks
+            var equipment = allEquipment
+                .Where(e => e.Classifications != null &&
+                            e.Classifications.Any(c => c != null && c.Id == classification.Id))
+                .ToList();
+
+            var equipmentObjects = equipment.Select(e => new
+            {
+                id = e.Id,
+                name = e.Name ?? "Unnamed Equipment",
+                type = "Equipment",
+                status = e.Status ?? "Unknown"
+            }).ToList();
+
+            return new
+            {
+                id = classification.Id,
+                name = classification.Name ?? "Unnamed Classification",
+                type = classification.Type ?? "Unknown",
+                level = classification.Level ?? "Unknown",
+                children = childrenObjects,
+                equipment = equipmentObjects
+            };
+        }
+
 
         private async Task<object> BuildClassificationHierarchy(Classification classification)
         {

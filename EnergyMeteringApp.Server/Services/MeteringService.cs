@@ -60,36 +60,48 @@ namespace EnergyMeteringApp.Services
         {
             try
             {
-                // Validate the request
-                var classification = await _context.Classifications.FindAsync(request.ClassificationId);
-                if (classification == null)
+                // Validate the request and its parameters
+                if (!request.ClassificationId.HasValue && !request.EquipmentId.HasValue)
                 {
-                    throw new ArgumentException($"Classification with ID {request.ClassificationId} not found");
+                    throw new ArgumentException("Either ClassificationId or EquipmentId must be provided");
                 }
 
-                // Find or use equipment
+                Classification? classification = null;
                 Equipment? equipment = null;
 
-                // If EquipmentId is provided in the request, use that
+                // If ClassificationId is provided, fetch it
+                if (request.ClassificationId.HasValue)
+                {
+                    classification = await _context.Classifications.FindAsync(request.ClassificationId.Value);
+                    if (classification == null)
+                    {
+                        throw new ArgumentException($"Classification with ID {request.ClassificationId} not found");
+                    }
+                }
+
+                // If EquipmentId is provided, use that
                 if (request.EquipmentId.HasValue)
                 {
-                    equipment = await _context.Equipment.FindAsync(request.EquipmentId.Value);
+                    equipment = await _context.Equipment
+                        .Include(e => e.Classifications)
+                        .FirstOrDefaultAsync(e => e.Id == request.EquipmentId);
+
                     if (equipment == null)
                     {
                         throw new ArgumentException($"Equipment with ID {request.EquipmentId} not found");
                     }
                 }
-                else
+                else if (classification != null)
                 {
                     // Find equipment that has this classification
                     equipment = await _context.Equipment
                         .Include(e => e.Classifications)
-                        .FirstOrDefaultAsync(e => e.Classifications.Any(c => c.Id == request.ClassificationId));
+                        .FirstOrDefaultAsync(e => e.Classifications.Any(c => c.Id == classification.Id));
 
                     // If no equipment exists with this classification, we need to create one
                     if (equipment == null)
                     {
-                        _logger.LogInformation($"No equipment found for classification {request.ClassificationId}. Creating temporary equipment.");
+                        _logger.LogInformation($"No equipment found for classification {classification.Id}. Creating temporary equipment.");
 
                         equipment = new Equipment
                         {
@@ -99,20 +111,17 @@ namespace EnergyMeteringApp.Services
                             InstallDate = DateTime.UtcNow,
                             CreatedAt = DateTime.UtcNow,
                             Location = "Default Location",
-                            Classifications = new List<Classification>() // Initialize empty list
+                            Classifications = new List<Classification> { classification }
                         };
 
                         _context.Equipment.Add(equipment);
                         await _context.SaveChangesAsync();
-
-                        // Now link the equipment with the classification
-                        if (equipment.Classifications != null)
-                        {
-                            equipment.Classifications.Add(classification);
-                            await _context.SaveChangesAsync();
-                        }
-
-                        _logger.LogInformation($"Created temporary equipment with ID {equipment.Id} for classification {classification.Name}");
+                    }
+                    else if (equipment.Classifications != null && !equipment.Classifications.Any(c => c.Id == classification.Id))
+                    {
+                        // Make sure the equipment has this classification
+                        equipment.Classifications.Add(classification);
+                        await _context.SaveChangesAsync();
                     }
                 }
 
@@ -122,6 +131,17 @@ namespace EnergyMeteringApp.Services
                     throw new InvalidOperationException("Failed to find or create equipment for metering data");
                 }
 
+                // If we have equipment but no classification was provided, use the first classification
+                if (classification == null && equipment.Classifications?.Any() == true)
+                {
+                    classification = equipment.Classifications.First();
+                }
+                else if (classification == null)
+                {
+                    throw new ArgumentException("No classification found or provided for data generation");
+                }
+
+                // Rest of the method (data generation) remains the same
                 var generatedData = new List<MeteringData>();
                 var startDate = request.StartDate;
                 var endDate = request.EndDate;
@@ -156,8 +176,8 @@ namespace EnergyMeteringApp.Services
                         Timestamp = date,
                         EnergyValue = energyValue,
                         Power = power,
-                        ClassificationId = request.ClassificationId,
-                        EquipmentId = equipment.Id  // Set the EquipmentId to satisfy the foreign key constraint
+                        ClassificationId = classification.Id,
+                        EquipmentId = equipment.Id
                     };
 
                     generatedData.Add(meteringData);

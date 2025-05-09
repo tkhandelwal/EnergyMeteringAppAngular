@@ -19,10 +19,10 @@ namespace EnergyMeteringApp.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<EquipmentController> _logger;
 
-        public EquipmentController(ApplicationDbContext context, ILogger<EquipmentController>? logger = null)
+        public EquipmentController(ApplicationDbContext context, ILogger<EquipmentController> logger)
         {
             _context = context;
-            _logger = logger ?? new Logger<EquipmentController>(new LoggerFactory());
+            _logger = logger;
         }
 
         // GET: api/Equipment
