@@ -1,6 +1,97 @@
 /* styles.css */
 @import 'bootstrap/dist/css/bootstrap.min.css';
 
+/* styles.css */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+
+:root {
+  --sidebar-width-expanded: 250px;
+  --sidebar-width-collapsed: 60px;
+  --header-height: 60px;
+  --primary-color: #0d6efd;
+  --secondary-color: #6c757d;
+  --dark-color: #343a40;
+  --light-color: #f8f9fa;
+  --success-color: #198754;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --info-color: #0dcaf0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+  /* Apply theme classes */
+  body.dark-theme {
+    background-color: #121212;
+    color: #e0e0e0;
+  }
+
+    body.dark-theme .card {
+      background-color: #1e1e1e;
+      border-color: #333;
+    }
+
+    body.dark-theme .table {
+      color: #e0e0e0;
+    }
+
+    body.dark-theme .main-header {
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+    }
+
+.card {
+  margin-bottom: 20px;
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-title {
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+  .btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+  }
+
+.table {
+  width: 100%;
+  margin-bottom: 1rem;
+  color: #212529;
+  border-collapse: collapse;
+}
+
+  .table th,
+  .table td {
+    padding: 0.75rem;
+    border-top: 1px solid #dee2e6;
+  }
+
+.alert {
+  border-radius: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.spinner-border {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f8f9fa;

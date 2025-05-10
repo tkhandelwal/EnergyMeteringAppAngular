@@ -3,12 +3,18 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { CacheService } from './cache.service';
+
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  constructor(private http: HttpClient) { }
+  // Constructor injection
+  constructor(
+    private http: HttpClient,
+    private cacheService: CacheService
+  ) { }
 
   // Equipment
   getEquipment(): Observable<any[]> {
@@ -104,8 +110,13 @@ export class ApiService {
 
   // Metering Data
   getMeteringData(params = {}): Observable<any[]> {
-    return this.http.get<any[]>('/api/meteringdata', { params: new HttpParams({ fromObject: params }) })
-      .pipe(catchError(error => this.handleError(error)));
+    const cacheKey = `meteringData-${JSON.stringify(params)}`;
+    return this.cacheService.cachedRequest(
+      cacheKey,
+      this.http.get<any[]>('/api/meteringdata', { params: new HttpParams({ fromObject: params }) })
+        .pipe(catchError(error => this.handleError(error))),
+      15 // Cache for 15 minutes
+    );
   }
 
   generateData(params: any): Observable<any> {
@@ -200,7 +211,7 @@ export class ApiService {
   // ISO 50001 EnPI Definitions
   getEnPIDefinitions(): Observable<any[]> {
     console.log('Fetching EnPI definitions');
-    return this.http.get<any[]>('/api/enpidefinitions').pipe(
+    return this.http.get<any[]>('/api/EnPIDefinitions').pipe(
       catchError(error => {
         console.error('Error in getEnPIDefinitions:', error);
         return throwError(() => new Error('Failed to load EnPI definitions'));
@@ -209,12 +220,12 @@ export class ApiService {
   }
 
   createEnPIDefinition(definition: any): Observable<any> {
-    return this.http.post('/api/enpidefinitions', definition)
+    return this.http.post('/api/EnPIDefinitions', definition)
       .pipe(catchError(error => this.handleError(error)));
   }
 
   deleteEnPIDefinition(id: number): Observable<any> {
-    return this.http.delete(`/api/enpidefinitions/${id}`)
+    return this.http.delete(`/api/EnPIDefinitions/${id}`)
       .pipe(catchError(error => this.handleError(error)));
   }
 
@@ -286,6 +297,11 @@ export class ApiService {
   // ISO 50001 Documentation
   generateDocument(request: any): Observable<any> {
     return this.http.post('/api/documentation/generate', request)
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
+  generateWordReport(request: any): Observable<any> {
+    return this.http.post('/api/reports/word', request)
       .pipe(catchError(error => this.handleError(error)));
   }
 

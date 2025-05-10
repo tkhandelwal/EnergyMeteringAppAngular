@@ -25,6 +25,7 @@
     "bootstrap": "^5.3.6",
     "date-fns": "^3.0.0",
     "jest-editor-support": "*",
+    "bootstrap-icons": "^1.11.1",
     "plotly.js": "^2.35.3",
     "plotly.js-dist": "^3.0.1",
     "run-script-os": "*",

@@ -69,6 +69,7 @@ export class TargetsManagerComponent implements OnInit {
   }
 
   fetchEnPIDefinitions(): void {
+    console.log('About to fetch EnPI definitions');
     this.loading = true;
     this.apiService.getEnPIDefinitions().subscribe({
       next: (data) => {

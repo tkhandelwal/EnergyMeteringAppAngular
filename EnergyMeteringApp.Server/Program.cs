@@ -14,6 +14,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<DocumentationService>();
+builder.Services.AddScoped<ReportService>();
 
 
 // Add CORS

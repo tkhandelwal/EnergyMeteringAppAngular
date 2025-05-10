@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 
 namespace EnergyMeteringApp.Controllers
@@ -161,6 +162,58 @@ namespace EnergyMeteringApp.Controllers
             {
                 _logger.LogError(ex, "Error creating metering data");
                 return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // Update MeteringDataController.cs
+        [HttpGet]
+        public async Task<ActionResult<PagedResult<MeteringData>>> GetMeteringData(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] int? classificationId = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 100)
+        {
+            try
+            {
+                var query = _context.MeteringData
+                    .Include(m => m.Classification)
+                    .Include(m => m.Equipment)
+                    .AsQueryable();
+
+                // Apply filters
+                if (startDate.HasValue)
+                    query = query.Where(m => m.Timestamp >= startDate.Value);
+
+                if (endDate.HasValue)
+                    query = query.Where(m => m.Timestamp <= endDate.Value);
+
+                if (classificationId.HasValue)
+                    query = query.Where(m => m.ClassificationId == classificationId.Value);
+
+                // Get total count
+                var totalCount = await query.CountAsync();
+
+                // Apply pagination
+                var items = await query
+                    .OrderByDescending(m => m.Timestamp)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                return Ok(new PagedResult<MeteringData>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching metering data");
+                return StatusCode(500, new { message = "Internal server error occurred" });
             }
         }
 

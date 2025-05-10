@@ -1,0 +1,33 @@
+<!-- src/app/components/sidebar/sidebar.component.html -->
+<div class="sidebar" [class.collapsed]="!isExpanded">
+  <div class="sidebar-header">
+    <div class="sidebar-title" *ngIf="isExpanded">
+      <span>Energy Metering</span>
+    </div>
+    <button class="toggle-btn" (click)="toggleSidebar()">
+      <i [class]="isExpanded ? 'bi bi-chevron-left' : 'bi bi-chevron-right'"></i>
+    </button>
+  </div>
+
+  <div class="sidebar-menu">
+    <div *ngFor="let menu of menuItems" class="menu-category">
+      <div class="category-header" *ngIf="isExpanded">
+        <i [class]="menu.icon"></i>
+        <span>{{menu.category}}</span>
+      </div>
+      <div class="category-items">
+        <a *ngFor="let item of menu.items"
+           [routerLink]="item.route"
+           routerLinkActive="active"
+           [routerLinkActiveOptions]="{exact: item.route === '/'}"
+           class="menu-item">
+          <i [class]="item.icon"></i>
+          <span *ngIf="isExpanded">{{item.name}}</span>
+          <div class="tooltip" *ngIf="!isExpanded">
+            <span class="tooltiptext">{{item.name}}</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

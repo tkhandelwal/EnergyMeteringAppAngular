@@ -12,6 +12,7 @@ import { PlotlyModule } from 'angular-plotly.js';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { SidebarComponent } from './components/sidebar/sidebar.component';
 
 // Initialize Plotly
 PlotlyModule.plotlyjs = PlotlyJS;
@@ -24,7 +25,8 @@ PlotlyModule.plotlyjs = PlotlyJS;
     ReactiveFormsModule,
     PlotlyModule,
     CommonModule,
-    RouterModule
+    RouterModule,
+    SidebarComponent
   ],
   providers: [
     provideHttpClient(withInterceptorsFromDi())

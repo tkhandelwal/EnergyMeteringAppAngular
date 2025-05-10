@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace EnergyMeteringApp.Models
 {
@@ -26,7 +27,8 @@ namespace EnergyMeteringApp.Models
         public string? Description { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
+        
+        [JsonIgnore]
         public ICollection<Target> Targets { get; set; } = new List<Target>();
     }
 }
