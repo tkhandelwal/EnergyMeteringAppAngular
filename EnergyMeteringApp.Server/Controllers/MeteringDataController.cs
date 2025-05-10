@@ -11,16 +11,6 @@ using System.Threading.Tasks;
 
 namespace EnergyMeteringApp.Controllers
 {
-    // Define PagedResult class if not already defined elsewhere
-    public class PagedResult<T>
-    {
-        public List<T>? Items { get; set; }
-        public int TotalCount { get; set; }
-        public int Page { get; set; }
-        public int PageSize { get; set; }
-        public int TotalPages { get; set; }
-    }
-
     [Route("api/[controller]")]
     [ApiController]
     public class MeteringDataController : ControllerBase
@@ -39,56 +29,14 @@ namespace EnergyMeteringApp.Controllers
             _logger = logger;
         }
 
-        // GET: api/MeteringData with pagination
+        // GET: api/MeteringData
         [HttpGet]
-        public async Task<ActionResult<PagedResult<MeteringData>>> GetMeteringData(
+        public async Task<ActionResult<IEnumerable<MeteringData>>> GetMeteringData(
             [FromQuery] DateTime? startDate = null,
             [FromQuery] DateTime? endDate = null,
-            [FromQuery] int? classificationId = null,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 100)
+            [FromQuery] int? classificationId = null)
         {
-            try
-            {
-                var query = _context.MeteringData
-                    .Include(m => m.Classification)
-                    .Include(m => m.Equipment)
-                    .AsQueryable();
-
-                // Apply filters
-                if (startDate.HasValue)
-                    query = query.Where(m => m.Timestamp >= startDate.Value);
-
-                if (endDate.HasValue)
-                    query = query.Where(m => m.Timestamp <= endDate.Value);
-
-                if (classificationId.HasValue)
-                    query = query.Where(m => m.ClassificationId == classificationId.Value);
-
-                // Get total count
-                var totalCount = await query.CountAsync();
-
-                // Apply pagination
-                var items = await query
-                    .OrderByDescending(m => m.Timestamp)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
-                return Ok(new PagedResult<MeteringData>
-                {
-                    Items = items,
-                    TotalCount = totalCount,
-                    Page = page,
-                    PageSize = pageSize,
-                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching metering data");
-                return StatusCode(500, new { message = "Internal server error occurred" });
-            }
+            return Ok(await _meteringService.GetMeteringDataAsync(startDate, endDate, classificationId));
         }
 
         // GET: api/MeteringData/5
@@ -135,7 +83,7 @@ namespace EnergyMeteringApp.Controllers
                 // Handle classification
                 int classificationId; // Initialize variable first
 
-                // Check if ClassificationId has a value
+                // Check if ClassificationId has a value (must use request.ClassificationId != null instead of HasValue)
                 if (request.ClassificationId.HasValue)
                 {
                     // Check if classification exists

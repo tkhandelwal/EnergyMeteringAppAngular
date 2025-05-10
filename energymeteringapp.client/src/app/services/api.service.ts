@@ -108,11 +108,8 @@ export class ApiService {
 
   // Metering Data
   getMeteringData(params = {}): Observable<any[]> {
-    return this.http.get<any[]>('/api/meteringdata', {
-      params: new HttpParams({ fromObject: params })
-    }).pipe(
-      catchError(error => this.handleError(error))
-    );
+    return this.http.get<any[]>('/api/meteringdata', { params: new HttpParams({ fromObject: params }) })
+      .pipe(catchError(error => this.handleError(error)));
   }
 
   generateData(params: any): Observable<any> {
