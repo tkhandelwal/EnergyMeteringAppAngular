@@ -13,8 +13,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<DocumentationService>();
-builder.Services.AddScoped<ReportService>();
 
 
 // Add CORS
@@ -35,6 +33,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Register services
 builder.Services.AddScoped<MeteringService>();
 builder.Services.AddScoped<EnPIService>();
+builder.Services.AddScoped<ReportService>();
+builder.Services.AddScoped<DocumentationService>();
+
+
+
 
 var app = builder.Build();
 

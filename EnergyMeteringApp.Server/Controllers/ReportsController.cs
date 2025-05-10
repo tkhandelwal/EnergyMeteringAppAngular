@@ -1,28 +1,35 @@
 ﻿// EnergyMeteringApp.Server/Controllers/ReportsController.cs
+using EnergyMeteringApp.Models;
+using EnergyMeteringApp.Services;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 
-[Route("api/[controller]")]
-[ApiController]
-public class ReportsController : ControllerBase
+namespace EnergyMeteringApp.Controllers
 {
-    private readonly ReportService _reportService;
-
-    public ReportsController(ReportService reportService)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ReportsController : ControllerBase
     {
-        _reportService = reportService;
-    }
+        private readonly ReportService _reportService;
 
-    [HttpPost("word")]
-    public async Task<IActionResult> GenerateWordReport(ReportRequest request)
-    {
-        try
+        public ReportsController(ReportService reportService)
         {
-            var reportPath = await _reportService.GenerateWordReport(request);
-            return Ok(new { path = reportPath });
+            _reportService = reportService;
         }
-        catch (Exception ex)
+
+        [HttpPost("word")]
+        public async Task<IActionResult> GenerateWordReport(ReportRequest request)
         {
-            return BadRequest(new { message = ex.Message });
+            try
+            {
+                var reportPath = await _reportService.GenerateWordReport(request);
+                return Ok(new { path = reportPath });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }
