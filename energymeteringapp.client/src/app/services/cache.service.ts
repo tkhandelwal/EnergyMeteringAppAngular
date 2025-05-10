@@ -1,7 +1,7 @@
 // src/app/services/cache.service.ts
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -38,6 +38,15 @@ export class CacheService {
     this.timeouts.clear();
   }
 
+  // In cache.service.ts
+  delete(key: string): void {
+    if (this.timeouts.has(key)) {
+      window.clearTimeout(this.timeouts.get(key));
+      this.timeouts.delete(key);
+    }
+    this.cache.delete(key);
+  }
+
   // Helper to wrap API calls
   cachedRequest<T>(key: string, request: Observable<T>, expirationMinutes = 5): Observable<T> {
     const cachedValue = this.get<T>(key);
@@ -46,7 +55,18 @@ export class CacheService {
     }
 
     return request.pipe(
-      tap(data => this.set(key, data, expirationMinutes))
+      tap(data => {
+        // Only cache valid data (not null/empty arrays)
+        if (data && (!Array.isArray(data) || data.length > 0)) {
+          this.set(key, data, expirationMinutes);
+        }
+      }),
+      catchError(error => {
+        console.error(`Cache request error for key ${key}:`, error);
+        // Don't cache errors
+        return throwError(() => error);
+      })
     );
+
   }
 }

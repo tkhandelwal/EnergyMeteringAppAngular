@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { CacheService } from './cache.service';
+//import { CacheService } from './cache.service';
 
 
 @Injectable({
@@ -11,10 +11,8 @@ import { CacheService } from './cache.service';
 })
 export class ApiService {
   // Constructor injection
-  constructor(
-    private http: HttpClient,
-    private cacheService: CacheService
-  ) { }
+  constructor(private http: HttpClient) { }
+
 
   // Equipment
   getEquipment(): Observable<any[]> {
@@ -110,12 +108,10 @@ export class ApiService {
 
   // Metering Data
   getMeteringData(params = {}): Observable<any[]> {
-    const cacheKey = `meteringData-${JSON.stringify(params)}`;
-    return this.cacheService.cachedRequest(
-      cacheKey,
-      this.http.get<any[]>('/api/meteringdata', { params: new HttpParams({ fromObject: params }) })
-        .pipe(catchError(error => this.handleError(error))),
-      15 // Cache for 15 minutes
+    return this.http.get<any[]>('/api/meteringdata', {
+      params: new HttpParams({ fromObject: params })
+    }).pipe(
+      catchError(error => this.handleError(error))
     );
   }
 
